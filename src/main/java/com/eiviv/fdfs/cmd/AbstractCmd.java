@@ -15,6 +15,12 @@ import com.eiviv.fdfs.utils.ByteUtils;
 
 public abstract class AbstractCmd<T> implements Cmd<T> {
 	
+	/**
+	 * 发起请求
+	 * 
+	 * @param socket socket
+	 * @throws IOException
+	 */
 	public final void request(Socket socket) throws IOException {
 		OutputStream os = socket.getOutputStream();
 		RequestBody requestBody = getRequestBody();
@@ -215,13 +221,40 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 		}
 	}
 	
+	/**
+	 * 获取请求 body
+	 * 
+	 * @return
+	 */
 	protected abstract RequestBody getRequestBody();
 	
+	/**
+	 * 定向输出
+	 * 
+	 * @return
+	 */
 	protected abstract OutputStream getOutputStream();
 	
+	/**
+	 * 获取 response cmd
+	 * 
+	 * @return
+	 */
 	protected abstract byte getResponseCmdCode();
 	
+	/**
+	 * 获取respone body 固定长度
+	 * 
+	 * @return
+	 */
 	protected abstract long getFixedBodyLength();
 	
+	/**
+	 * 处理完成回调方法
+	 * 
+	 * @param response
+	 * @return
+	 * @throws IOException
+	 */
 	protected abstract Result<T> callback(Response response) throws IOException;
 }

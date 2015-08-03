@@ -16,10 +16,21 @@ public class QueryStorageInfoCmd extends AbstractCmd<List<StorageInfo>> {
 	private String group;
 	private String ip;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 */
 	public QueryStorageInfoCmd(String group) {
 		this.group = group;
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param ip IP
+	 */
 	public QueryStorageInfoCmd(String group, String ip) {
 		this(group);
 		this.ip = ip;

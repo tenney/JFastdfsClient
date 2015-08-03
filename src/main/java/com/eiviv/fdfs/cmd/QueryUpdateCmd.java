@@ -14,6 +14,12 @@ public class QueryUpdateCmd extends AbstractCmd<String> {
 	private String group;
 	private String fileName;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 */
 	public QueryUpdateCmd(String group, String fileName) {
 		this.group = group;
 		this.fileName = fileName;

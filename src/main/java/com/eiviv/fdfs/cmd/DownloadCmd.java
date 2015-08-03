@@ -16,17 +16,41 @@ public class DownloadCmd extends AbstractCmd<Boolean> {
 	private long size;
 	private OutputStream os;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 * @param os OutputStream
+	 */
 	public DownloadCmd(String group, String fileName, OutputStream os) {
 		this.group = group;
 		this.fileName = fileName;
 		this.os = os;
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 * @param os OutputSteam
+	 * @param offset 下载开始点
+	 */
 	public DownloadCmd(String group, String fileName, OutputStream os, long offset) {
 		this(group, fileName, os);
 		this.offset = offset;
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 * @param os OutputSteam
+	 * @param offset 下载开始点
+	 * @param size 要下载的长度
+	 */
 	public DownloadCmd(String group, String fileName, OutputStream os, long offset, long size) {
 		this(group, fileName, os, offset);
 		this.size = size;

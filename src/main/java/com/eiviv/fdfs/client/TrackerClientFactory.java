@@ -16,6 +16,12 @@ public class TrackerClientFactory implements KeyedPooledObjectFactory<String, Tr
 	public TrackerClientFactory() {
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param connectTimeout 连接超时时间 (秒)
+	 * @param networkTimeout 网络超时时间(秒)
+	 */
 	public TrackerClientFactory(Integer connectTimeout, Integer networkTimeout) {
 		this.connectTimeout = connectTimeout;
 		this.networkTimeout = networkTimeout;

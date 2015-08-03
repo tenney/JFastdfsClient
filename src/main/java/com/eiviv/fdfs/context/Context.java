@@ -4,6 +4,8 @@ import java.nio.charset.Charset;
 
 public class Context {
 	
+	public static final Charset CHARSET = Charset.forName("UTF-8");
+	
 	public static final byte FDFS_PROTO_CMD_QUIT = 82;
 	public static final byte TRACKER_PROTO_CMD_SERVER_LIST_GROUP = 91;
 	public static final byte TRACKER_PROTO_CMD_SERVER_LIST_STORAGE = 92;
@@ -16,7 +18,9 @@ public class Context {
 	public static final byte TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ALL = 106;
 	public static final byte TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITH_GROUP_ALL = 107;
 	public static final byte TRACKER_PROTO_CMD_RESP = 100;
+	
 	public static final byte FDFS_PROTO_CMD_ACTIVE_TEST = 111;
+	
 	public static final byte STORAGE_PROTO_CMD_UPLOAD_FILE = 11;
 	public static final byte STORAGE_PROTO_CMD_DELETE_FILE = 12;
 	public static final byte STORAGE_PROTO_CMD_SET_METADATA = 13;
@@ -40,14 +44,10 @@ public class Context {
 	public static final byte FDFS_STORAGE_STATUS_ACTIVE = 7;
 	public static final byte FDFS_STORAGE_STATUS_NONE = 99;
 	
-	/**
-	 * for overwrite all old metadata
-	 */
+	/** for overwrite all old metadata */
 	public static final byte STORAGE_SET_METADATA_FLAG_OVERWRITE = 'O';
 	
-	/**
-	 * for replace, insert when the meta item not exist, otherwise update it
-	 */
+	/** for replace, insert when the meta item not exist, otherwise update it */
 	public static final byte STORAGE_SET_METADATA_FLAG_MERGE = 'M';
 	
 	public static final int FDFS_PROTO_PKG_LEN_SIZE = 8;
@@ -88,5 +88,4 @@ public class Context {
 	public static final long TRUNK_LOGIC_FILENAME_LENGTH = NORMAL_LOGIC_FILENAME_LENGTH + FDFS_TRUNK_FILE_INFO_LEN;
 	
 	public static final int SUCCESS_CODE = 0;
-	public static final Charset CHARSET = Charset.forName("UTF-8");
 }

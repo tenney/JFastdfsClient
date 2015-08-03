@@ -26,6 +26,11 @@ public class TrackerClient extends AbstractClient {
 	private String host;
 	private Integer port;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param address "host:port"
+	 */
 	public TrackerClient(String address) {
 		String[] hostport = address.split(":");
 		
@@ -33,6 +38,13 @@ public class TrackerClient extends AbstractClient {
 		this.port = Integer.valueOf(hostport[1]);
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param address "host:port"
+	 * @param connectTimeout 连接超时时间(秒)
+	 * @param networkTimeout 传输超时时间(秒)
+	 */
 	public TrackerClient(String address, Integer connectTimeout, Integer networkTimeout) {
 		this(address);
 		
@@ -40,36 +52,76 @@ public class TrackerClient extends AbstractClient {
 		this.networkTimeout = networkTimeout;
 	}
 	
+	/**
+	 * 获取更新 storage
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	public Result<UploadStorage> getUploadStorage() throws IOException {
 		Cmd<UploadStorage> command = new QueryUploadCmd();
 		
 		return command.exec(getSocket());
 	}
 	
+	/**
+	 * 获取更新 storage 地址
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 * @return 更新 storage 地址
+	 * @throws IOException
+	 */
 	public Result<String> getUpdateStorageAddr(String group, String fileName) throws IOException {
 		Cmd<String> cmd = new QueryUpdateCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
 	}
 	
+	/**
+	 * 获取下载 storage 地址
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 * @return 下载 storage 地址
+	 * @throws IOException
+	 */
 	public Result<String> getDownloadStorageAddr(String group, String fileName) throws IOException {
 		Cmd<String> cmd = new QueryDownloadCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
 	}
 	
+	/**
+	 * 获取组信息
+	 * 
+	 * @return 组信息
+	 * @throws IOException
+	 */
 	public Result<List<GroupInfo>> getGroupInfos() throws IOException {
 		Cmd<List<GroupInfo>> cmd = new QueryGroupInfoCmd();
 		
 		return cmd.exec(getSocket());
 	}
 	
+	/**
+	 * 获取 StorageInfos
+	 * 
+	 * @param group 组名
+	 * @return StorageInfo 集合
+	 * @throws IOException
+	 */
 	public Result<List<StorageInfo>> getStorageInfos(String group) throws IOException {
 		Cmd<List<StorageInfo>> cmd = new QueryStorageInfoCmd(group);
 		
 		return cmd.exec(getSocket());
 	}
 	
+	/**
+	 * 关闭socket连接
+	 * 
+	 * @throws IOException
+	 */
 	public void close() throws IOException {
 		Socket socket = getSocket();
 		Cmd<Boolean> cmd = new CloseCmd();
@@ -78,6 +130,12 @@ public class TrackerClient extends AbstractClient {
 		socket = null;
 	}
 	
+	/**
+	 * 获取socket
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	private Socket getSocket() throws IOException {
 		
 		if (socket == null) {

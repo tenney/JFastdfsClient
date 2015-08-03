@@ -15,6 +15,12 @@ public class QueryMetaDataCmd extends AbstractCmd<Map<String, String>> {
 	private String group;
 	private String fileName;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 */
 	public QueryMetaDataCmd(String group, String fileName) {
 		this.group = group;
 		this.fileName = fileName;

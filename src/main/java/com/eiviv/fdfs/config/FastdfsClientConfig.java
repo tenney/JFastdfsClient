@@ -17,9 +17,18 @@ public class FastdfsClientConfig {
 	private int networkTimeout = DEFAULT_NETWORK_TIMEOUT * 1000;
 	private List<String> trackerAddrs = new ArrayList<String>();
 	
+	/**
+	 * 实例化
+	 */
 	public FastdfsClientConfig() {
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param configFile 配置文件名
+	 * @throws ConfigurationException
+	 */
 	public FastdfsClientConfig(String configFile) throws ConfigurationException {
 		Configuration config = new PropertiesConfiguration(configFile);
 		

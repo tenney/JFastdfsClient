@@ -16,6 +16,12 @@ public class StorageClientFactory implements KeyedPooledObjectFactory<String, St
 	public StorageClientFactory() {
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param connectTimeout 连接超时时间(秒)
+	 * @param networkTimeout 传输超时时间(秒)
+	 */
 	public StorageClientFactory(Integer connectTimeout, Integer networkTimeout) {
 		this.connectTimeout = connectTimeout;
 		this.networkTimeout = networkTimeout;

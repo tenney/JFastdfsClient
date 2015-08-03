@@ -17,9 +17,14 @@ public class FastdfsClientFactory {
 	private static volatile FastdfsClient fastdfsClient;
 	private static FastdfsClientConfig config = null;
 	
-	public FastdfsClientFactory() {
+	private FastdfsClientFactory() {
 	}
 	
+	/**
+	 * 获取 fastdfs client 客户端
+	 * 
+	 * @return FastdfsClient实例
+	 */
 	public static FastdfsClient getFastdfsClient() {
 		if (fastdfsClient == null) {
 			synchronized (FastdfsClient.class) {

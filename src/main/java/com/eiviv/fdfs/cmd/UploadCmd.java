@@ -16,6 +16,13 @@ public class UploadCmd extends AbstractCmd<String> {
 	private String extName;
 	private byte storePathIndex;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param file 文件
+	 * @param extName 扩展名
+	 * @param storePathIndex 上传路径
+	 */
 	public UploadCmd(File file, String extName, byte storePathIndex) {
 		this.file = file;
 		this.extName = extName;
@@ -73,6 +80,12 @@ public class UploadCmd extends AbstractCmd<String> {
 		return result;
 	}
 	
+	/**
+	 * 获取文件扩展名
+	 * 
+	 * @param fileName
+	 * @return
+	 */
 	private byte[] getFileExtNameByte(String fileName) {
 		String fileExtName = null;
 		int nPos = fileName.lastIndexOf('.');

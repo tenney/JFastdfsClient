@@ -21,7 +21,7 @@ public class ActiveTestCmd extends AbstractCmd<Boolean> {
 	
 	@Override
 	protected byte getResponseCmdCode() {
-		return 0;
+		return Context.STORAGE_PROTO_CMD_RESP;
 	}
 	
 	@Override

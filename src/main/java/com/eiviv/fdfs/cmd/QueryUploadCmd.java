@@ -14,16 +14,23 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 	
 	private String group;
 	
+	/**
+	 * 实例化
+	 */
 	public QueryUploadCmd() {
 	}
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group
+	 */
 	public QueryUploadCmd(String group) {
 		this.group = group;
 	}
 	
 	@Override
 	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
-		
 		byte requestCmdCode = Context.TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ONE;
 		
 		if (group == null || group.trim() == "") {

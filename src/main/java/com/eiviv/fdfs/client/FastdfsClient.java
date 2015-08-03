@@ -1,6 +1,7 @@
 package com.eiviv.fdfs.client;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,11 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 
-import com.eiviv.fdfs.client.AbstractClient;
-import com.eiviv.fdfs.client.StorageClient;
-import com.eiviv.fdfs.client.StorageClientFactory;
-import com.eiviv.fdfs.client.TrackerClient;
-import com.eiviv.fdfs.client.TrackerClientFactory;
 import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.model.GroupInfo;
 import com.eiviv.fdfs.model.Result;
@@ -28,6 +24,12 @@ public class FastdfsClient extends AbstractClient {
 	private List<String> trackerAddrs = new ArrayList<String>();
 	private Map<String, String> storageIpMap = new ConcurrentHashMap<String, String>();
 	
+	/**
+	 * 构造
+	 * 
+	 * @param trackerAddrs {trackerHost1:port, trackerHost2:port, ...}
+	 * @throws Exception
+	 */
 	public FastdfsClient(List<String> trackerAddrs) throws Exception {
 		this.trackerAddrs = trackerAddrs;
 		this.trackerClientPool = new GenericKeyedObjectPool<String, TrackerClient>(new TrackerClientFactory());
@@ -36,6 +38,13 @@ public class FastdfsClient extends AbstractClient {
 		updateStorageIpMap();
 	}
 	
+	/**
+	 * 构造
+	 * 
+	 * @param trackerAddrs {trackerHost1:port, trackerHost2:port, ...}
+	 * @param trackerClientPool trackerClient 连接池
+	 * @param storageClientPool storageClient 连接池
+	 */
 	public FastdfsClient(	List<String> trackerAddrs,
 							GenericKeyedObjectPool<String, TrackerClient> trackerClientPool,
 							GenericKeyedObjectPool<String, StorageClient> storageClientPool) {
@@ -44,7 +53,16 @@ public class FastdfsClient extends AbstractClient {
 		this.storageClientPool = storageClientPool;
 	}
 	
-	public String upload(File file, String ext, Map<String, String> meta) throws Exception {
+	/**
+	 * 文件上传
+	 * 
+	 * @param file 文件
+	 * @param extName 文件扩展名
+	 * @param meta 元信息
+	 * @return fileId "group/remoteFileName"
+	 * @throws Exception
+	 */
+	public String upload(File file, String extName, Map<String, String> meta) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		StorageClient storageClient = null;
@@ -62,19 +80,17 @@ public class FastdfsClient extends AbstractClient {
 			storageAddr = result.getData().getAddress();
 			storageClient = storageClientPool.borrowObject(storageAddr);
 			
-			String extname = ext;
-			
-			if (ext == null) {
-				extname = getFileExtName(file);
+			if (extName == null) {
+				extName = getFileExtName(file);
 			}
 			
-			Result<String> result2 = storageClient.upload(file, extname, result.getData().getPathIndex());
+			Result<String> uploadResult = storageClient.upload(file, extName, result.getData().getPathIndex());
 			
-			if (result2.getCode() != Context.SUCCESS_CODE) {
+			if (uploadResult.getCode() != Context.SUCCESS_CODE) {
 				return fileId;
 			}
 			
-			fileId = result2.getData();
+			fileId = uploadResult.getData();
 			
 			if (meta != null) {
 				setMeta(fileId, meta);
@@ -93,7 +109,41 @@ public class FastdfsClient extends AbstractClient {
 		return fileId;
 	}
 	
-	public String uploadSlave(File file, String fileid, String prefix, String ext) throws Exception {
+	/**
+	 * 上传文件
+	 * 
+	 * @param file 文件
+	 * @param extName 扩展名
+	 * @return
+	 * @throws Exception
+	 */
+	public String upload(File file, String extName) throws Exception {
+		return upload(file, extName, null);
+	}
+	
+	/**
+	 * 上传文件
+	 * 
+	 * @param file 文件
+	 * @return
+	 * @throws Exception
+	 */
+	public String upload(File file) throws Exception {
+		String fileName = file.getName();
+		return upload(file, fileName);
+	}
+	
+	/**
+	 * 上传文件副本
+	 * 
+	 * @param file 文件
+	 * @param fileid 原文件ID "group/remoteFileName"
+	 * @param prefix 副本文件名后缀
+	 * @param extName 扩展名
+	 * @return 副本fileId "group/remoteFileName"
+	 * @throws Exception
+	 */
+	public String uploadSlave(File file, String fileid, String prefix, String extName) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		StorageClient storageClient = null;
@@ -111,18 +161,18 @@ public class FastdfsClient extends AbstractClient {
 			String groupname = tupple[0];
 			String filename = tupple[1];
 			
-			Result<String> result = trackerClient.getUpdateStorageAddr(groupname, filename);
+			Result<String> updateStorageResult = trackerClient.getUpdateStorageAddr(groupname, filename);
 			
-			if (result.getCode() != Context.SUCCESS_CODE) {
+			if (updateStorageResult.getCode() != Context.SUCCESS_CODE) {
 				return fileId;
 			}
 			
-			storageAddr = result.getData();
+			storageAddr = updateStorageResult.getData();
 			storageClient = storageClientPool.borrowObject(storageAddr);
-			Result<String> result2 = storageClient.uploadSlave(file, filename, prefix, ext, null);
+			Result<String> updaloadSlave = storageClient.uploadSlave(file, filename, prefix, extName, null);
 			
-			if (result2.getCode() == Context.SUCCESS_CODE) {
-				fileId = result2.getData();
+			if (updaloadSlave.getCode() == Context.SUCCESS_CODE) {
+				fileId = updaloadSlave.getData();
 			}
 		} catch (Exception e) {
 			throw e;
@@ -138,6 +188,14 @@ public class FastdfsClient extends AbstractClient {
 		return fileId;
 	}
 	
+	/**
+	 * 设置元信息
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param meta 元信息
+	 * @return boolean
+	 * @throws Exception
+	 */
 	public Boolean setMeta(String fileId, Map<String, String> meta) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
@@ -148,17 +206,17 @@ public class FastdfsClient extends AbstractClient {
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
-			Result<String> result2 = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
+			Result<String> updateStorageResult = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
 			
-			if (result2.getCode() != Context.SUCCESS_CODE) {
+			if (updateStorageResult.getCode() != Context.SUCCESS_CODE) {
 				return result;
 			}
 			
-			storageAddr = result2.getData();
+			storageAddr = updateStorageResult.getData();
 			storageClient = storageClientPool.borrowObject(storageAddr);
-			Result<Boolean> result3 = storageClient.setMeta(fastDfsFile.group, fastDfsFile.fileName, meta);
+			Result<Boolean> setMetaResult = storageClient.setMeta(fastDfsFile.group, fastDfsFile.fileName, meta);
 			
-			result = result3.getData();
+			result = setMetaResult.getData();
 		} catch (Exception e) {
 			throw e;
 		} finally {
@@ -173,6 +231,13 @@ public class FastdfsClient extends AbstractClient {
 		return result;
 	}
 	
+	/**
+	 * 获取元信息
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @return 元信息
+	 * @throws Exception
+	 */
 	public Map<String, String> getMeta(String fileId) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
@@ -183,18 +248,18 @@ public class FastdfsClient extends AbstractClient {
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
-			Result<String> result2 = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
+			Result<String> updateStorageResult = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
 			
-			if (result2.getCode() != Context.SUCCESS_CODE) {
+			if (updateStorageResult.getCode() != Context.SUCCESS_CODE) {
 				return meta;
 			}
 			
-			storageAddr = result2.getData();
+			storageAddr = updateStorageResult.getData();
 			storageClient = storageClientPool.borrowObject(storageAddr);
-			Result<Map<String, String>> result3 = storageClient.getMeta(fastDfsFile.group, fastDfsFile.fileName);
+			Result<Map<String, String>> getMetaResult = storageClient.getMeta(fastDfsFile.group, fastDfsFile.fileName);
 			
-			if (result3.getCode() == Context.SUCCESS_CODE) {
-				meta = result3.getData();
+			if (getMetaResult.getCode() == Context.SUCCESS_CODE) {
+				meta = getMetaResult.getData();
 			}
 		} catch (Exception e) {
 			throw e;
@@ -210,7 +275,14 @@ public class FastdfsClient extends AbstractClient {
 		return meta;
 	}
 	
-	public String getUrl(String fileId) throws Exception {
+	/**
+	 * 获取http下载地址
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @return http下载地址
+	 * @throws Exception
+	 */
+	public String getDownloadUrl(String fileId) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		String url = null;
@@ -234,15 +306,13 @@ public class FastdfsClient extends AbstractClient {
 		return url;
 	}
 	
-	public String upload(File file) throws Exception {
-		String fileName = file.getName();
-		return upload(file, fileName);
-	}
-	
-	public String upload(File file, String fileName) throws Exception {
-		return upload(file, fileName, null);
-	}
-	
+	/**
+	 * 删除文件
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @return boolean
+	 * @throws Exception
+	 */
 	public Boolean delete(String fileId) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
@@ -253,17 +323,17 @@ public class FastdfsClient extends AbstractClient {
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
-			Result<String> result2 = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
+			Result<String> updateStorageResult = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
 			
-			if (result2.getCode() != Context.SUCCESS_CODE) {
+			if (updateStorageResult.getCode() != Context.SUCCESS_CODE) {
 				return result;
 			}
 			
-			storageAddr = result2.getData();
+			storageAddr = updateStorageResult.getData();
 			storageClient = storageClientPool.borrowObject(storageAddr);
-			Result<Boolean> result3 = storageClient.delete(fastDfsFile.group, fastDfsFile.fileName);
+			Result<Boolean> deleteResult = storageClient.delete(fastDfsFile.group, fastDfsFile.fileName);
 			
-			result = result3.getData();
+			result = deleteResult.getData();
 		} catch (Exception e) {
 			throw e;
 		} finally {
@@ -278,10 +348,15 @@ public class FastdfsClient extends AbstractClient {
 		return result;
 	}
 	
-	public Boolean download(String fileId, OutputStream os) throws Exception {
-		return download(fileId, os, 0);
-	}
-	
+	/**
+	 * 断点下载
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param os OutputStream
+	 * @param offset 开始点
+	 * @return boolean
+	 * @throws Exception
+	 */
 	public Boolean download(String fileId, OutputStream os, long offset) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
@@ -292,17 +367,17 @@ public class FastdfsClient extends AbstractClient {
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
-			Result<String> result2 = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
+			Result<String> updateStorageResult = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
 			
-			if (result2.getCode() != Context.SUCCESS_CODE) {
+			if (updateStorageResult.getCode() != Context.SUCCESS_CODE) {
 				return result;
 			}
 			
-			storageAddr = result2.getData();
+			storageAddr = updateStorageResult.getData();
 			storageClient = storageClientPool.borrowObject(storageAddr);
-			Result<Boolean> result3 = storageClient.download(fastDfsFile.group, fastDfsFile.fileName, os, offset);
+			Result<Boolean> downloadResult = storageClient.download(fastDfsFile.group, fastDfsFile.fileName, os, offset);
 			
-			result = result3.getData();
+			result = downloadResult.getData();
 		} catch (Exception e) {
 			throw e;
 		} finally {
@@ -317,11 +392,69 @@ public class FastdfsClient extends AbstractClient {
 		return result;
 	}
 	
+	/**
+	 * 下载文件
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param os OutputStream
+	 * @return boolean
+	 * @throws Exception
+	 */
+	public Boolean download(String fileId, OutputStream os) throws Exception {
+		return download(fileId, os, 0);
+	}
+	
+	/**
+	 * 断点下载文件
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param localFile 本地文件
+	 * @param offset 下载开始点
+	 * @return boolean
+	 * @throws Exception
+	 */
+	public Boolean download(String fileId, File localFile, long offset) throws Exception {
+		return download(fileId, new FileOutputStream(localFile), offset);
+	}
+	
+	/**
+	 * 下载文件
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param localFile 本地文件
+	 * @return boolean
+	 * @throws Exception
+	 */
+	public Boolean download(String fileId, File localFile) throws Exception {
+		return download(fileId, new FileOutputStream(localFile));
+	}
+	
+	/**
+	 * 断点下载文件
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param localFileName 本地文件名
+	 * @param offset 下载开始点
+	 * @return
+	 * @throws Exception
+	 */
+	public Boolean downloadFile(String fileId, String localFileName, long offset) throws Exception {
+		return download(fileId, new File(localFileName), offset);
+	}
+	
+	/**
+	 * 关闭 trackerClient 连接池 和 storageClient连接池
+	 */
 	public void close() {
 		this.trackerClientPool.close();
 		this.storageClientPool.close();
 	}
 	
+	/**
+	 * 获取随机 tracker server 链接地址
+	 * 
+	 * @return
+	 */
 	private String getTrackerAddr() {
 		Random r = new Random();
 		int i = r.nextInt(trackerAddrs.size());
@@ -329,6 +462,11 @@ public class FastdfsClient extends AbstractClient {
 		return trackerAddrs.get(i);
 	}
 	
+	/**
+	 * 更新 storage ip
+	 * 
+	 * @throws Exception
+	 */
 	private void updateStorageIpMap() throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
@@ -371,6 +509,13 @@ public class FastdfsClient extends AbstractClient {
 		}
 	}
 	
+	/**
+	 * 获取获取下载host
+	 * 
+	 * @param storageAddr storage 地址
+	 * @return 下载host
+	 * @throws Exception
+	 */
 	private String getDownloadHostPort(String storageAddr) throws Exception {
 		String downloadHostPort = storageIpMap.get(storageAddr);
 		
@@ -382,6 +527,12 @@ public class FastdfsClient extends AbstractClient {
 		return downloadHostPort;
 	}
 	
+	/**
+	 * 根据文件,获取扩展名
+	 * 
+	 * @param file 文件
+	 * @return 扩展名
+	 */
 	private String getFileExtName(File file) {
 		String name = file.getName();
 		
@@ -396,8 +547,10 @@ public class FastdfsClient extends AbstractClient {
 		return null;
 	}
 	
+	/**
+	 * fileId 实体类
+	 */
 	private static final class FastDfsFile {
-		
 		private String group;
 		private String fileName;
 		

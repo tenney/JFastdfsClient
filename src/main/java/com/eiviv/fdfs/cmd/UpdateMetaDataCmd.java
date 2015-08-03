@@ -16,6 +16,13 @@ public class UpdateMetaDataCmd extends AbstractCmd<Boolean> {
 	private String fileName;
 	private Map<String, String> metaData;
 	
+	/**
+	 * 实例化
+	 * 
+	 * @param group 组名
+	 * @param fileName 文件名
+	 * @param metaData 云信息
+	 */
 	public UpdateMetaDataCmd(String group, String fileName, Map<String, String> metaData) {
 		this.group = group;
 		this.fileName = fileName;
@@ -76,6 +83,12 @@ public class UpdateMetaDataCmd extends AbstractCmd<Boolean> {
 		return new Result<Boolean>(response.getCode(), response.isSuccess());
 	}
 	
+	/**
+	 * 生成 meta str
+	 * 
+	 * @param metaData
+	 * @return
+	 */
 	private String metaDataToStr(Map<String, String> metaData) {
 		StringBuffer sb = new StringBuffer();
 		
