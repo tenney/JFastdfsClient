@@ -17,7 +17,7 @@ public class UpdateTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Koala.jpg");
 		File file = new File(fileUrl.getPath());
-		Map<String, String> meta = new HashMap<String, String>();
+		HashMap<String, String> meta = new HashMap<String, String>();
 		meta.put("size", "200x200");
 		
 		String fileId = fastdfsClient.upload(file, null, meta);
