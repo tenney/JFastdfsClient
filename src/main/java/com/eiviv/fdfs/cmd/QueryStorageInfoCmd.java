@@ -5,13 +5,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.model.StorageInfo;
 
-public class QueryStorageInfoCmd extends AbstractCmd<List<StorageInfo>> {
+public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 	
 	private String group;
 	private String ip;
@@ -84,10 +83,10 @@ public class QueryStorageInfoCmd extends AbstractCmd<List<StorageInfo>> {
 	}
 	
 	@Override
-	protected Result<List<StorageInfo>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
+	protected Result<ArrayList<StorageInfo>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
 		
 		if (!response.isSuccess()) {
-			return new Result<List<StorageInfo>>(response.getCode(), "Error");
+			return new Result<ArrayList<StorageInfo>>(response.getCode(), "Error");
 		}
 		
 		byte[] data = response.getData();
@@ -97,7 +96,7 @@ public class QueryStorageInfoCmd extends AbstractCmd<List<StorageInfo>> {
 			throw new IOException("recv body length: " + data.length + " is not correct");
 		}
 		
-		List<StorageInfo> storageInfos = new ArrayList<StorageInfo>();
+		ArrayList<StorageInfo> storageInfos = new ArrayList<StorageInfo>();
 		int offset = 0;
 		
 		while (offset < dataLength) {
@@ -106,7 +105,7 @@ public class QueryStorageInfoCmd extends AbstractCmd<List<StorageInfo>> {
 			offset += StorageInfo.BYTE_SIZE;
 		}
 		
-		return new Result<List<StorageInfo>>(response.getCode(), storageInfos);
+		return new Result<ArrayList<StorageInfo>>(response.getCode(), storageInfos);
 	}
 	
 }

@@ -58,24 +58,24 @@ public class DownloadCmd extends AbstractCmd<Boolean> {
 	
 	@Override
 	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
-		byte[] offsetBytes = ByteUtils.long2bytes(offset);
-		byte[] sizeBytes = ByteUtils.long2bytes(size);
-		byte[] groupBytes = group.getBytes(Context.CHARSET);
-		byte[] filenameBytes = fileName.getBytes(Context.CHARSET);
-		int groupLen = groupBytes.length;
+		byte[] offsetByte = ByteUtils.long2bytes(offset);
+		byte[] sizeByte = ByteUtils.long2bytes(size);
+		byte[] groupByte = group.getBytes(Context.CHARSET);
+		byte[] filenameByte = fileName.getBytes(Context.CHARSET);
+		int groupLen = groupByte.length;
 		
 		if (groupLen > Context.FDFS_GROUP_NAME_MAX_LEN) {
 			groupLen = Context.FDFS_GROUP_NAME_MAX_LEN;
 		}
 		
-		byte[] body = new byte[offsetBytes.length + sizeBytes.length + Context.FDFS_GROUP_NAME_MAX_LEN + filenameBytes.length];
+		byte[] body = new byte[offsetByte.length + sizeByte.length + Context.FDFS_GROUP_NAME_MAX_LEN + filenameByte.length];
 		
 		Arrays.fill(body, (byte) 0);
 		
-		System.arraycopy(offsetBytes, 0, body, 0, offsetBytes.length);
-		System.arraycopy(sizeBytes, 0, body, offsetBytes.length, sizeBytes.length);
-		System.arraycopy(groupBytes, 0, body, offsetBytes.length + sizeBytes.length, groupLen);
-		System.arraycopy(filenameBytes, 0, body, offsetBytes.length + sizeBytes.length + Context.FDFS_GROUP_NAME_MAX_LEN, filenameBytes.length);
+		System.arraycopy(offsetByte, 0, body, 0, offsetByte.length);
+		System.arraycopy(sizeByte, 0, body, offsetByte.length, sizeByte.length);
+		System.arraycopy(groupByte, 0, body, offsetByte.length + sizeByte.length, groupLen);
+		System.arraycopy(filenameByte, 0, body, offsetByte.length + sizeByte.length + Context.FDFS_GROUP_NAME_MAX_LEN, filenameByte.length);
 		
 		return new RequestBody(Context.STORAGE_PROTO_CMD_DOWNLOAD_FILE, body);
 	}

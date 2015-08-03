@@ -1,9 +1,12 @@
 package com.eiviv.fdfs.model;
 
+import java.io.Serializable;
+
 import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.utils.ByteUtils;
 
-public class GroupInfo {
+@SuppressWarnings("serial")
+public class GroupInfo implements Serializable {
 	
 	public final static int BYTE_SIZE = 105;
 	

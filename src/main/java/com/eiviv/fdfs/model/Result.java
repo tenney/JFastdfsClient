@@ -1,6 +1,8 @@
 package com.eiviv.fdfs.model;
 
-public class Result<T> {
+import java.io.Serializable;
+
+public class Result<T extends Serializable> {
 	
 	private int code;
 	private String message;

@@ -5,12 +5,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.model.Result;
 
-public class QueryMetaDataCmd extends AbstractCmd<Map<String, String>> {
+public class QueryMetaDataCmd extends AbstractCmd<HashMap<String, String>> {
 	
 	private String group;
 	private String fileName;
@@ -61,22 +60,23 @@ public class QueryMetaDataCmd extends AbstractCmd<Map<String, String>> {
 	}
 	
 	@Override
-	protected Result<Map<String, String>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
+	protected Result<HashMap<String, String>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
+		HashMap<String, String> metaData = null;
 		
 		if (!response.isSuccess()) {
-			return new Result<Map<String, String>>(response.getCode(), "GetMetaData Error");
+			return new Result<HashMap<String, String>>(response.getCode(), metaData);
 		}
 		
 		String metaStr = new String(response.getData(), Context.CHARSET);
-		Map<String, String> metaData = new HashMap<String, String>();
 		String[] rows = metaStr.split(Context.FDFS_RECORD_SEPERATOR);
+		metaData = new HashMap<String, String>();
 		
 		for (String row : rows) {
 			String[] cols = row.split(Context.FDFS_FIELD_SEPERATOR);
 			metaData.put(cols[0], cols[1]);
 		}
 		
-		return new Result<Map<String, String>>(response.getCode(), metaData);
+		return new Result<HashMap<String, String>>(response.getCode(), metaData);
 	}
 	
 }

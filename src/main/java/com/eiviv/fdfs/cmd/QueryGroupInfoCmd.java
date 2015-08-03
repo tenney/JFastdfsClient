@@ -4,13 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.List;
 
 import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.model.GroupInfo;
 import com.eiviv.fdfs.model.Result;
 
-public class QueryGroupInfoCmd extends AbstractCmd<List<GroupInfo>> {
+public class QueryGroupInfoCmd extends AbstractCmd<ArrayList<GroupInfo>> {
 	
 	@Override
 	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
@@ -33,10 +32,10 @@ public class QueryGroupInfoCmd extends AbstractCmd<List<GroupInfo>> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.model.Result<List<GroupInfo>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
+	protected com.eiviv.fdfs.model.Result<ArrayList<GroupInfo>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
 		
 		if (!response.isSuccess()) {
-			return new Result<List<GroupInfo>>(response.getCode(), "Error");
+			return new Result<ArrayList<GroupInfo>>(response.getCode(), "Error");
 		}
 		
 		byte[] data = response.getData();
@@ -46,7 +45,7 @@ public class QueryGroupInfoCmd extends AbstractCmd<List<GroupInfo>> {
 			throw new IOException("recv body length: " + data.length + " is not correct");
 		}
 		
-		List<GroupInfo> groupInfos = new ArrayList<GroupInfo>();
+		ArrayList<GroupInfo> groupInfos = new ArrayList<GroupInfo>();
 		int offset = 0;
 		
 		while (offset < dataLength) {
@@ -55,7 +54,7 @@ public class QueryGroupInfoCmd extends AbstractCmd<List<GroupInfo>> {
 			offset += GroupInfo.BYTE_SIZE;
 		}
 		
-		return new Result<List<GroupInfo>>(response.getCode(), groupInfos);
+		return new Result<ArrayList<GroupInfo>>(response.getCode(), groupInfos);
 	}
 	
 }

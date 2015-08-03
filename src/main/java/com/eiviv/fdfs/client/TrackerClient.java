@@ -3,7 +3,7 @@ package com.eiviv.fdfs.client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.List;
+import java.util.ArrayList;
 
 import com.eiviv.fdfs.cmd.CloseCmd;
 import com.eiviv.fdfs.cmd.Cmd;
@@ -53,7 +53,7 @@ public class TrackerClient extends AbstractClient {
 	}
 	
 	/**
-	 * 获取更新 storage
+	 * 获取上传 storage
 	 * 
 	 * @return
 	 * @throws IOException
@@ -98,8 +98,8 @@ public class TrackerClient extends AbstractClient {
 	 * @return 组信息
 	 * @throws IOException
 	 */
-	public Result<List<GroupInfo>> getGroupInfos() throws IOException {
-		Cmd<List<GroupInfo>> cmd = new QueryGroupInfoCmd();
+	public Result<ArrayList<GroupInfo>> getGroupInfos() throws IOException {
+		Cmd<ArrayList<GroupInfo>> cmd = new QueryGroupInfoCmd();
 		
 		return cmd.exec(getSocket());
 	}
@@ -111,8 +111,8 @@ public class TrackerClient extends AbstractClient {
 	 * @return StorageInfo 集合
 	 * @throws IOException
 	 */
-	public Result<List<StorageInfo>> getStorageInfos(String group) throws IOException {
-		Cmd<List<StorageInfo>> cmd = new QueryStorageInfoCmd(group);
+	public Result<ArrayList<StorageInfo>> getStorageInfos(String group) throws IOException {
+		Cmd<ArrayList<StorageInfo>> cmd = new QueryStorageInfoCmd(group);
 		
 		return cmd.exec(getSocket());
 	}

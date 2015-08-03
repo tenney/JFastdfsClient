@@ -1,6 +1,9 @@
 package com.eiviv.fdfs.model;
 
-public class UploadStorage {
+import java.io.Serializable;
+
+@SuppressWarnings("serial")
+public class UploadStorage implements Serializable {
 	
 	private String address;
 	private byte pathIndex;

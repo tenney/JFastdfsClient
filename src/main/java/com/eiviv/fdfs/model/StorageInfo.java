@@ -1,11 +1,13 @@
 package com.eiviv.fdfs.model;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.utils.ByteUtils;
 
-public class StorageInfo {
+@SuppressWarnings("serial")
+public class StorageInfo implements Serializable {
 	
 	public final static int BYTE_SIZE = 612;
 	

@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 import java.util.Arrays;
 
@@ -13,10 +14,10 @@ import com.eiviv.fdfs.context.Context;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
-public abstract class AbstractCmd<T> implements Cmd<T> {
+public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	
 	/**
-	 * 发起请求
+	 * socket write
 	 * 
 	 * @param socket socket
 	 * @throws IOException
@@ -40,15 +41,18 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 		Arrays.fill(header, (byte) 0);
 		
 		File file = requestBody.getFile();
-		byte[] hex_len = null;
+		byte[] fileByte = requestBody.getFileByte();
+		byte[] bodyLenByte = null;
 		
-		if (file == null) {
-			hex_len = ByteUtils.long2bytes(body.length);
+		if (file != null) {
+			bodyLenByte = ByteUtils.long2bytes(body.length + file.length());
+		} else if (fileByte != null) {
+			bodyLenByte = ByteUtils.long2bytes(body.length + fileByte.length);
 		} else {
-			hex_len = ByteUtils.long2bytes(body.length + file.length());
+			bodyLenByte = ByteUtils.long2bytes(body.length);
 		}
 		
-		System.arraycopy(hex_len, 0, header, 0, hex_len.length);
+		System.arraycopy(bodyLenByte, 0, header, 0, bodyLenByte.length);
 		System.arraycopy(body, 0, header, Context.FDFS_PROTO_PKG_LEN_SIZE + 2, body.length);
 		
 		header[Context.PROTO_HEADER_CMD_INDEX] = requestBody.getRequestCmdCode();
@@ -56,19 +60,19 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 		
 		os.write(header);
 		
-		if (file == null) {
-			return;
+		if (file != null) {
+			InputStream is = new FileInputStream(file);
+			byte[] readBuff = new byte[256 * 1024];
+			int readLen = 0;
+			
+			while ((readLen = is.read(readBuff)) != -1) {
+				os.write(readBuff, 0, readLen);
+			}
+			
+			is.close();
+		} else if (fileByte != null) {
+			os.write(fileByte, 0, fileByte.length);
 		}
-		
-		InputStream is = new FileInputStream(file);
-		byte[] readBuff = new byte[256 * 1024];
-		int readLen = 0;
-		
-		while ((readLen = is.read(readBuff)) != -1) {
-			os.write(readBuff, 0, readLen);
-		}
-		
-		is.close();
 	}
 	
 	@Override
@@ -148,6 +152,7 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 		
 		private byte requestCmdCode;
 		private byte[] body;
+		private byte[] fileByte;
 		private File file;
 		
 		public RequestBody(byte requestCmdCode) {
@@ -164,6 +169,11 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 			this.file = file;
 		}
 		
+		public RequestBody(byte requestCmdCode, byte[] body, byte[] fileByte) {
+			this(requestCmdCode, body);
+			this.fileByte = fileByte;
+		}
+		
 		public byte getRequestCmdCode() {
 			return requestCmdCode;
 		}
@@ -178,6 +188,14 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 		
 		public void setBody(byte[] body) {
 			this.body = body;
+		}
+		
+		public byte[] getFileByte() {
+			return fileByte;
+		}
+		
+		public void setFileByte(byte[] fileByte) {
+			this.fileByte = fileByte;
 		}
 		
 		public File getFile() {
@@ -219,6 +237,7 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 		public void setData(byte[] data) {
 			this.data = data;
 		}
+		
 	}
 	
 	/**
@@ -257,4 +276,5 @@ public abstract class AbstractCmd<T> implements Cmd<T> {
 	 * @throws IOException
 	 */
 	protected abstract Result<T> callback(Response response) throws IOException;
+	
 }

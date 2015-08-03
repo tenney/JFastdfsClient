@@ -5,18 +5,22 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Map;
+import java.util.HashMap;
 
 import com.eiviv.fdfs.cmd.ActiveTestCmd;
+import com.eiviv.fdfs.cmd.AppendCmd;
 import com.eiviv.fdfs.cmd.CloseCmd;
 import com.eiviv.fdfs.cmd.Cmd;
 import com.eiviv.fdfs.cmd.DeleteCmd;
 import com.eiviv.fdfs.cmd.DownloadCmd;
+import com.eiviv.fdfs.cmd.QueryFileInfoCmd;
 import com.eiviv.fdfs.cmd.QueryMetaDataCmd;
+import com.eiviv.fdfs.cmd.TruncateFileCmd;
 import com.eiviv.fdfs.cmd.UpdateMetaDataCmd;
 import com.eiviv.fdfs.cmd.UploadCmd;
 import com.eiviv.fdfs.cmd.UploadSlaveCmd;
 import com.eiviv.fdfs.config.FastdfsClientConfig;
+import com.eiviv.fdfs.model.FileInfo;
 import com.eiviv.fdfs.model.Result;
 
 public class StorageClient extends AbstractClient {
@@ -54,6 +58,21 @@ public class StorageClient extends AbstractClient {
 	}
 	
 	/**
+	 * 上传文件
+	 * 
+	 * @param file 文件
+	 * @param extName 扩展名
+	 * @param storePathIndex 存储地址
+	 * @return fileId
+	 * @throws IOException
+	 */
+	public Result<String> upload(File file, String extName, byte storePathIndex) throws IOException {
+		Cmd<String> cmd = new UploadCmd(file, extName, storePathIndex);
+		
+		return cmd.exec(getSocket());
+	}
+	
+	/**
 	 * 上传副本
 	 * 
 	 * @param file 文件
@@ -64,7 +83,7 @@ public class StorageClient extends AbstractClient {
 	 * @return Result
 	 * @throws IOException
 	 */
-	public Result<String> uploadSlave(File file, String fileId, String slavePrefix, String ext, Map<String, String> meta) throws IOException {
+	public Result<String> uploadSlave(File file, String fileId, String slavePrefix, String ext, HashMap<String, String> meta) throws IOException {
 		Cmd<String> cmd = new UploadSlaveCmd(file, fileId, slavePrefix, ext);
 		Result<String> result = cmd.exec(getSocket());
 		
@@ -82,16 +101,15 @@ public class StorageClient extends AbstractClient {
 	}
 	
 	/**
-	 * 上传文件
+	 * 断点上传文件
 	 * 
-	 * @param file 文件
-	 * @param extName 扩展名
-	 * @param storePathIndex 存储地址
-	 * @return fileId
+	 * @param fileName remoteFileName
+	 * @param fileByte 文件字节数组
+	 * @return boolean
 	 * @throws IOException
 	 */
-	public Result<String> upload(File file, String extName, byte storePathIndex) throws IOException {
-		Cmd<String> cmd = new UploadCmd(file, extName, storePathIndex);
+	public Result<Boolean> append(String fileName, byte[] fileByte) throws IOException {
+		Cmd<Boolean> cmd = new AppendCmd(fileName, fileByte);
 		
 		return cmd.exec(getSocket());
 	}
@@ -106,35 +124,6 @@ public class StorageClient extends AbstractClient {
 	 */
 	public Result<Boolean> delete(String group, String fileName) throws IOException {
 		Cmd<Boolean> cmd = new DeleteCmd(group, fileName);
-		
-		return cmd.exec(getSocket());
-	}
-	
-	/**
-	 * 设置元信息
-	 * 
-	 * @param group 组名
-	 * @param fileName remoteFileName
-	 * @param meta 元信息
-	 * @return boolean
-	 * @throws IOException
-	 */
-	public Result<Boolean> setMeta(String group, String fileName, Map<String, String> meta) throws IOException {
-		Cmd<Boolean> cmd = new UpdateMetaDataCmd(group, fileName, meta);
-		
-		return cmd.exec(getSocket());
-	}
-	
-	/**
-	 * 获取元信息
-	 * 
-	 * @param group 组名
-	 * @param fileName remoteFileName
-	 * @return map 元信息
-	 * @throws IOException
-	 */
-	public Result<Map<String, String>> getMeta(String group, String fileName) throws IOException {
-		Cmd<Map<String, String>> cmd = new QueryMetaDataCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
 	}
@@ -179,6 +168,63 @@ public class StorageClient extends AbstractClient {
 	 */
 	public Result<Boolean> download(String group, String fileName, OutputStream os, long offset, long size) throws IOException {
 		Cmd<Boolean> cmd = new DownloadCmd(group, fileName, os, offset, size);
+		
+		return cmd.exec(getSocket());
+	}
+	
+	/**
+	 * 裁剪文件
+	 * 
+	 * @param fileName remoteFileName
+	 * @param truncatedFileSize 裁剪后的大小
+	 * @return boolean
+	 * @throws IOException
+	 */
+	public Result<Boolean> truncate(String fileName, long truncatedFileSize) throws IOException {
+		Cmd<Boolean> cmd = new TruncateFileCmd(fileName, truncatedFileSize);
+		
+		return cmd.exec(getSocket());
+	}
+	
+	/**
+	 * 设置元信息
+	 * 
+	 * @param group 组名
+	 * @param fileName remoteFileName
+	 * @param meta 元信息
+	 * @return boolean
+	 * @throws IOException
+	 */
+	public Result<Boolean> setMeta(String group, String fileName, HashMap<String, String> meta) throws IOException {
+		Cmd<Boolean> cmd = new UpdateMetaDataCmd(group, fileName, meta);
+		
+		return cmd.exec(getSocket());
+	}
+	
+	/**
+	 * 获取元信息
+	 * 
+	 * @param group 组名
+	 * @param fileName remoteFileName
+	 * @return HashMap 元信息
+	 * @throws IOException
+	 */
+	public Result<HashMap<String, String>> getMeta(String group, String fileName) throws IOException {
+		Cmd<HashMap<String, String>> cmd = new QueryMetaDataCmd(group, fileName);
+		
+		return cmd.exec(getSocket());
+	}
+	
+	/**
+	 * 获取上传文件信息
+	 * 
+	 * @param group
+	 * @param fileName
+	 * @return
+	 * @throws IOException
+	 */
+	public Result<FileInfo> getFileInfo(String group, String fileName) throws IOException {
+		Cmd<FileInfo> cmd = new QueryFileInfoCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
 	}
