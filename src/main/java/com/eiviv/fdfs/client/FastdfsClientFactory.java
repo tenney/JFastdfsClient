@@ -13,7 +13,7 @@ import com.eiviv.fdfs.config.FastdfsClientConfig;
 public class FastdfsClientFactory {
 	
 	private static Logger logger = LoggerFactory.getLogger(FastdfsClientFactory.class);
-	private final static String configFile = "FastdfsClient.properties";
+	private final static String configFile = "fastdfs.properties";
 	private static volatile FastdfsClient fastdfsClient;
 	private static FastdfsClientConfig config = null;
 	
