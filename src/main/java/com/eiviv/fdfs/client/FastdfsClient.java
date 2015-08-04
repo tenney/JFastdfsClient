@@ -243,7 +243,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @return boolean
 	 * @throws Exception
 	 */
-	public Boolean download(String fileId, OutputStream os) throws Exception {
+	public boolean download(String fileId, OutputStream os) throws Exception {
 		return download(fileId, os, 0);
 	}
 	
@@ -256,7 +256,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @return boolean
 	 * @throws Exception
 	 */
-	public Boolean download(String fileId, File localFile, long offset) throws Exception {
+	public boolean download(String fileId, File localFile, long offset) throws Exception {
 		return download(fileId, new FileOutputStream(localFile), offset);
 	}
 	
@@ -268,7 +268,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @return boolean
 	 * @throws Exception
 	 */
-	public Boolean download(String fileId, File localFile) throws Exception {
+	public boolean download(String fileId, File localFile) throws Exception {
 		return download(fileId, new FileOutputStream(localFile));
 	}
 	
@@ -281,7 +281,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @return
 	 * @throws Exception
 	 */
-	public Boolean downloadFile(String fileId, String localFileName, long offset) throws Exception {
+	public boolean downloadFile(String fileId, String localFileName, long offset) throws Exception {
 		return download(fileId, new File(localFileName), offset);
 	}
 	
@@ -293,7 +293,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @return boolean
 	 * @throws Exception
 	 */
-	public Boolean truncateFile(String fileId, final long truncatedFileSize) throws Exception {
+	public boolean truncateFile(String fileId, final long truncatedFileSize) throws Exception {
 		Boolean result = fixedStorageExec(fileId, new StorageExecutor<Boolean>() {
 			@Override
 			public Boolean exec(StorageClient storageClient, FastDfsFile fastDfsFile) throws Exception {

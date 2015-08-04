@@ -16,13 +16,14 @@ public class AppendTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Test.txt");
 		File file = new File(fileUrl.getPath());
-		String fileId = "group1/M00/00/0F/rBDLZFXA0q-AdzsdAAyPUlOp7Oo2830.gz";
+		String fileId = fastdfsClient.upload(file);
 		System.out.println("fileId:" + fileId);
 		
-		String t = "ABCD";
-		byte[] tb = t.getBytes(Context.CHARSET);
+		byte[] tb = "ABCD".getBytes(Context.CHARSET);
 		
-		fastdfsClient.appendFile(fileId, tb);
+		boolean result = fastdfsClient.appendFile(fileId, tb);
+		
+		System.out.println(result);
 		
 		fastdfsClient.close();
 	}
