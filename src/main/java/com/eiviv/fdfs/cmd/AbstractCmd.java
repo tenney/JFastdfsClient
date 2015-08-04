@@ -1,8 +1,6 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,14 +38,12 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 		
 		Arrays.fill(header, (byte) 0);
 		
-		File file = requestBody.getFile();
+		InputStream is = requestBody.getInputStream();
 		byte[] fileByte = requestBody.getFileByte();
 		byte[] bodyLenByte = null;
 		
-		if (file != null) {
-			bodyLenByte = ByteUtils.long2bytes(body.length + file.length());
-		} else if (fileByte != null) {
-			bodyLenByte = ByteUtils.long2bytes(body.length + fileByte.length);
+		if (is != null || fileByte != null) {
+			bodyLenByte = ByteUtils.long2bytes(body.length + requestBody.getSize());
 		} else {
 			bodyLenByte = ByteUtils.long2bytes(body.length);
 		}
@@ -60,16 +56,27 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 		
 		os.write(header);
 		
-		if (file != null) {
-			InputStream is = new FileInputStream(file);
+		if (is != null) {
 			byte[] readBuff = new byte[256 * 1024];
 			int readLen = 0;
 			
-			while ((readLen = is.read(readBuff)) != -1) {
-				os.write(readBuff, 0, readLen);
+			try {
+				while ((readLen = is.read(readBuff)) != -1) {
+					os.write(readBuff, 0, readLen);
+				}
+			} catch (IOException e) {
+				throw e;
+			} finally {
+				if (is != null) {
+					try {
+						is.close();
+					} catch (IOException e) {
+						throw e;
+					} finally {
+						is = null;
+					}
+				}
 			}
-			
-			is.close();
 		} else if (fileByte != null) {
 			os.write(fileByte, 0, fileByte.length);
 		}
@@ -85,67 +92,79 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			return callback(new Response(Context.SUCCESS_CODE, null));
 		}
 		
-		byte[] header = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2];
-		InputStream sockectInputStream = socket.getInputStream();
-		int headerLen = sockectInputStream.read(header);
-		
-		if (headerLen != header.length) {
-			throw new IOException("recv package size " + headerLen + " != " + header.length);
-		}
-		
-		byte resCmdCode = getResponseCmdCode();
-		
-		if (header[Context.PROTO_HEADER_CMD_INDEX] != resCmdCode) {
-			throw new IOException("recv cmd: " + header[Context.PROTO_HEADER_CMD_INDEX] + " is not correct, expect cmd: " + resCmdCode);
-		}
-		
-		if (header[Context.PROTO_HEADER_STATUS_INDEX] != Context.SUCCESS_CODE) {
-			return callback(new Response(Context.PROTO_HEADER_STATUS_INDEX, null));
-		}
-		
-		long bodyLen = ByteUtils.bytes2long(header, 0);
-		
-		if (bodyLen < 0) {
-			throw new IOException("recv body length: " + bodyLen + " < 0!");
-		}
-		
-		long fixedBodyLen = getFixedBodyLength();
-		
-		if (fixedBodyLen >= 0 && bodyLen != fixedBodyLen) {
-			throw new IOException("recv body length: " + bodyLen + " is not correct, expect length: " + fixedBodyLen);
-		}
-		
-		byte[] buff = new byte[2 * 1024];
-		int totalBytes = 0;
-		int remainBytes = (int) bodyLen;
-		
-		while (totalBytes < bodyLen) {
-			int len = remainBytes;
+		try {
+			byte[] header = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2];
+			InputStream sockectInputStream = socket.getInputStream();
+			int headerLen = sockectInputStream.read(header);
 			
-			if (len > buff.length) {
-				len = buff.length;
+			if (headerLen != header.length) {
+				throw new IOException("recv package size " + headerLen + " != " + header.length);
 			}
 			
-			if ((headerLen = sockectInputStream.read(buff, 0, len)) < 0) {
-				break;
+			byte resCmdCode = getResponseCmdCode();
+			
+			if (header[Context.PROTO_HEADER_CMD_INDEX] != resCmdCode) {
+				throw new IOException("recv cmd: " + header[Context.PROTO_HEADER_CMD_INDEX] + " is not correct, expect cmd: " + resCmdCode);
 			}
 			
-			writer.write(buff, 0, headerLen);
-			totalBytes += headerLen;
-			remainBytes -= headerLen;
+			if (header[Context.PROTO_HEADER_STATUS_INDEX] != Context.SUCCESS_CODE) {
+				return callback(new Response(Context.PROTO_HEADER_STATUS_INDEX, null));
+			}
+			
+			long bodyLen = ByteUtils.bytes2long(header, 0);
+			
+			if (bodyLen < 0) {
+				throw new IOException("recv body length: " + bodyLen + " < 0!");
+			}
+			
+			long fixedBodyLen = getFixedBodyLength();
+			
+			if (fixedBodyLen >= 0 && bodyLen != fixedBodyLen) {
+				throw new IOException("recv body length: " + bodyLen + " is not correct, expect length: " + fixedBodyLen);
+			}
+			
+			byte[] buff = new byte[2 * 1024];
+			int totalBytes = 0;
+			int remainBytes = (int) bodyLen;
+			
+			while (totalBytes < bodyLen) {
+				int len = remainBytes;
+				
+				if (len > buff.length) {
+					len = buff.length;
+				}
+				
+				if ((headerLen = sockectInputStream.read(buff, 0, len)) < 0) {
+					break;
+				}
+				
+				writer.write(buff, 0, headerLen);
+				totalBytes += headerLen;
+				remainBytes -= headerLen;
+			}
+			
+			if (totalBytes != bodyLen) {
+				throw new IOException("recv package size " + totalBytes + " != " + bodyLen);
+			}
+			
+			if (writer instanceof ByteArrayOutputStream) {
+				return callback(new Response(Context.SUCCESS_CODE, ((ByteArrayOutputStream) writer).toByteArray()));
+			}
+			
+			return callback(new Response(Context.SUCCESS_CODE, null));
+		} catch (IOException e) {
+			throw e;
+		} finally {
+			if (writer != null) {
+				try {
+					writer.close();
+				} catch (IOException e) {
+					throw e;
+				} finally {
+					writer = null;
+				}
+			}
 		}
-		
-		if (totalBytes != bodyLen) {
-			throw new IOException("recv package size " + totalBytes + " != " + bodyLen);
-		}
-		
-		writer.close();
-		
-		if (writer instanceof ByteArrayOutputStream) {
-			return callback(new Response(Context.SUCCESS_CODE, ((ByteArrayOutputStream) writer).toByteArray()));
-		}
-		
-		return callback(new Response(Context.SUCCESS_CODE, null));
 	}
 	
 	protected static final class RequestBody {
@@ -153,7 +172,8 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 		private byte requestCmdCode;
 		private byte[] body;
 		private byte[] fileByte;
-		private File file;
+		private InputStream inputStream;
+		private long size;
 		
 		public RequestBody(byte requestCmdCode) {
 			this.requestCmdCode = requestCmdCode;
@@ -164,14 +184,16 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			this.body = body;
 		}
 		
-		public RequestBody(byte requestCmdCode, byte[] body, File file) {
+		public RequestBody(byte requestCmdCode, byte[] body, InputStream inputStream, long size) {
 			this(requestCmdCode, body);
-			this.file = file;
+			this.inputStream = inputStream;
+			this.size = size;
 		}
 		
 		public RequestBody(byte requestCmdCode, byte[] body, byte[] fileByte) {
 			this(requestCmdCode, body);
 			this.fileByte = fileByte;
+			this.size = fileByte.length;
 		}
 		
 		public byte getRequestCmdCode() {
@@ -198,12 +220,20 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			this.fileByte = fileByte;
 		}
 		
-		public File getFile() {
-			return file;
+		public InputStream getInputStream() {
+			return inputStream;
 		}
 		
-		public void setFile(File file) {
-			this.file = file;
+		public void setInputStream(InputStream inputStream) {
+			this.inputStream = inputStream;
+		}
+		
+		public long getSize() {
+			return size;
+		}
+		
+		public void setSize(long size) {
+			this.size = size;
 		}
 		
 	}

@@ -1,7 +1,9 @@
 package com.eiviv.fdfs.client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -74,13 +76,14 @@ public class FastdfsClient extends AbstractClient {
 	/**
 	 * 文件上传
 	 * 
-	 * @param file 文件
+	 * @param inputStream 文件流
+	 * @param size 文件大小
 	 * @param extName 文件扩展名
 	 * @param meta 元信息
-	 * @return fileId "group/remoteFileName"
+	 * @return fileId
 	 * @throws Exception
 	 */
-	public String upload(File file, String extName, HashMap<String, String> meta) throws Exception {
+	public String upload(InputStream inputStream, long size, String extName, HashMap<String, String> meta) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		StorageClient storageClient = null;
@@ -98,11 +101,7 @@ public class FastdfsClient extends AbstractClient {
 			storageAddr = result.getData().getAddress();
 			storageClient = storageClientPool.borrowObject(storageAddr);
 			
-			if (extName == null) {
-				extName = getFileExtName(file);
-			}
-			
-			Result<String> uploadResult = storageClient.upload(file, extName, result.getData().getPathIndex());
+			Result<String> uploadResult = storageClient.upload(inputStream, size, extName, result.getData().getPathIndex());
 			
 			if (uploadResult.getCode() != Context.SUCCESS_CODE) {
 				return fileId;
@@ -128,6 +127,19 @@ public class FastdfsClient extends AbstractClient {
 	}
 	
 	/**
+	 * 文件上传
+	 * 
+	 * @param file 文件
+	 * @param extName 文件扩展名
+	 * @param meta 元信息
+	 * @return fileId "group/remoteFileName"
+	 * @throws Exception
+	 */
+	public String upload(File file, String extName, HashMap<String, String> meta) throws Exception {
+		return upload(new FileInputStream(file), file.length(), extName, meta);
+	}
+	
+	/**
 	 * 上传文件
 	 * 
 	 * @param file 文件
@@ -147,8 +159,29 @@ public class FastdfsClient extends AbstractClient {
 	 * @throws Exception
 	 */
 	public String upload(File file) throws Exception {
-		String fileName = file.getName();
-		return upload(file, fileName);
+		return upload(file, getFileExtName(file));
+	}
+	
+	/**
+	 * 上传文件副本
+	 * 
+	 * @param inputStream 文件输入流
+	 * @param size 文件大小
+	 * @param metaFileId 原fileId
+	 * @param prefix 副本名后缀
+	 * @param extName 扩展名
+	 * @return fileId
+	 * @throws Exception
+	 */
+	public String uploadSlave(final InputStream inputStream, final long size, String metaFileId, final String prefix, final String extName) throws Exception {
+		return fixedStorageExec(metaFileId, new StorageExecutor<String>() {
+			@Override
+			public String exec(StorageClient storageClient, FastDfsFile fastDfsFile) throws Exception {
+				Result<String> updaloadSlaveResult = storageClient.uploadSlave(inputStream, size, fastDfsFile.fileName, prefix, extName, null);
+				
+				return updaloadSlaveResult.getData();
+			}
+		});
 	}
 	
 	/**
@@ -162,14 +195,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @throws Exception
 	 */
 	public String uploadSlave(final File file, String metaFileId, final String prefix, final String extName) throws Exception {
-		return fixedStorageExec(metaFileId, new StorageExecutor<String>() {
-			@Override
-			public String exec(StorageClient storageClient, FastDfsFile fastDfsFile) throws Exception {
-				Result<String> updaloadSlaveResult = storageClient.uploadSlave(file, fastDfsFile.fileName, prefix, extName, null);
-				
-				return updaloadSlaveResult.getData();
-			}
-		});
+		return uploadSlave(new FileInputStream(file), file.length(), metaFileId, prefix, extName);
 	}
 	
 	/**

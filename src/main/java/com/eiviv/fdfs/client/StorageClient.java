@@ -1,7 +1,9 @@
 package com.eiviv.fdfs.client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -60,6 +62,22 @@ public class StorageClient extends AbstractClient {
 	/**
 	 * 上传文件
 	 * 
+	 * @param inputStream 输入流
+	 * @param size 文件大小
+	 * @param extName 文件扩展名
+	 * @param storePathIndex 上传路径
+	 * @return fileId
+	 * @throws IOException
+	 */
+	public Result<String> upload(InputStream inputStream, long size, String extName, byte storePathIndex) throws IOException {
+		Cmd<String> cmd = new UploadCmd(inputStream, size, extName, storePathIndex);
+		
+		return cmd.exec(getSocket());
+	}
+	
+	/**
+	 * 上传文件
+	 * 
 	 * @param file 文件
 	 * @param extName 扩展名
 	 * @param storePathIndex 存储地址
@@ -67,24 +85,29 @@ public class StorageClient extends AbstractClient {
 	 * @throws IOException
 	 */
 	public Result<String> upload(File file, String extName, byte storePathIndex) throws IOException {
-		Cmd<String> cmd = new UploadCmd(file, extName, storePathIndex);
-		
-		return cmd.exec(getSocket());
+		return upload(new FileInputStream(file), file.length(), extName, storePathIndex);
 	}
 	
 	/**
 	 * 上传副本
 	 * 
-	 * @param file 文件
+	 * @param inputStream 输入流
+	 * @param size 文件大小
 	 * @param fileId "group/remoteFileName"
 	 * @param slavePrefix 副本名后缀
-	 * @param ext 扩展名
+	 * @param extName 扩展名
 	 * @param meta 元信息
-	 * @return Result
+	 * @return fileId
 	 * @throws IOException
 	 */
-	public Result<String> uploadSlave(File file, String fileId, String slavePrefix, String ext, HashMap<String, String> meta) throws IOException {
-		Cmd<String> cmd = new UploadSlaveCmd(file, fileId, slavePrefix, ext);
+	public Result<String> uploadSlave(	InputStream inputStream,
+										long size,
+										String fileId,
+										String slavePrefix,
+										String extName,
+										HashMap<String, String> meta) throws IOException {
+		Cmd<String> cmd = new UploadSlaveCmd(inputStream, size, fileId, slavePrefix, extName);
+		
 		Result<String> result = cmd.exec(getSocket());
 		
 		if (meta != null) {
@@ -98,6 +121,21 @@ public class StorageClient extends AbstractClient {
 		}
 		
 		return result;
+	}
+	
+	/**
+	 * 上传副本
+	 * 
+	 * @param file 文件
+	 * @param fileId "group/remoteFileName"
+	 * @param slavePrefix 副本名后缀
+	 * @param ext 扩展名
+	 * @param meta 元信息
+	 * @return Result
+	 * @throws IOException
+	 */
+	public Result<String> uploadSlave(File file, String fileId, String slavePrefix, String extName, HashMap<String, String> meta) throws IOException {
+		return uploadSlave(new FileInputStream(file), file.length(), fileId, slavePrefix, extName, meta);
 	}
 	
 	/**

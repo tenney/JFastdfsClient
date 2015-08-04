@@ -1,8 +1,8 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
@@ -12,19 +12,21 @@ import com.eiviv.fdfs.utils.ByteUtils;
 
 public class UploadCmd extends AbstractCmd<String> {
 	
-	private File file;
-	private String extName;
 	private byte storePathIndex;
+	private InputStream inputStream;
+	private long size;
+	private String extName;
 	
 	/**
 	 * 实例化
 	 * 
-	 * @param file 文件
-	 * @param extName 扩展名
-	 * @param storePathIndex 上传路径
+	 * @param inputStream
+	 * @param extName
+	 * @param storePathIndex
 	 */
-	public UploadCmd(File file, String extName, byte storePathIndex) {
-		this.file = file;
+	public UploadCmd(InputStream inputStream, long size, String extName, byte storePathIndex) {
+		this.inputStream = inputStream;
+		this.size = size;
 		this.extName = extName;
 		this.storePathIndex = storePathIndex;
 	}
@@ -34,8 +36,8 @@ public class UploadCmd extends AbstractCmd<String> {
 		byte[] body = new byte[15];
 		Arrays.fill(body, (byte) 0);
 		body[0] = storePathIndex;
-		byte[] fileSizeByte = ByteUtils.long2bytes(file.length());
-		byte[] fileExtNameByte = getFileExtNameByte(extName);
+		byte[] fileSizeByte = ByteUtils.long2bytes(size);
+		byte[] fileExtNameByte = extName != null ? extName.getBytes(Context.CHARSET) : new byte[0];
 		int fileExtNameByteLen = fileExtNameByte.length;
 		
 		if (fileExtNameByteLen > Context.FDFS_FILE_EXT_NAME_MAX_LEN) {
@@ -45,7 +47,7 @@ public class UploadCmd extends AbstractCmd<String> {
 		System.arraycopy(fileSizeByte, 0, body, 1, fileSizeByte.length);
 		System.arraycopy(fileExtNameByte, 0, body, fileSizeByte.length + 1, fileExtNameByteLen);
 		
-		return new RequestBody(Context.STORAGE_PROTO_CMD_UPLOAD_FILE, body, file);
+		return new RequestBody(Context.STORAGE_PROTO_CMD_UPLOAD_FILE, body, inputStream, size);
 	}
 	
 	@Override
@@ -79,28 +81,4 @@ public class UploadCmd extends AbstractCmd<String> {
 		
 		return result;
 	}
-	
-	/**
-	 * 获取文件扩展名
-	 * 
-	 * @param fileName
-	 * @return
-	 */
-	private byte[] getFileExtNameByte(String fileName) {
-		String fileExtName = null;
-		int nPos = fileName.lastIndexOf('.');
-		
-		if (nPos > 0 && fileName.length() - nPos <= Context.FDFS_FILE_EXT_NAME_MAX_LEN + 1) {
-			fileExtName = fileName.substring(nPos + 1);
-			
-			if (fileExtName != null && fileExtName.length() > 0) {
-				return fileExtName.getBytes(Context.CHARSET);
-			} else {
-				return new byte[0];
-			}
-		} else {
-			return fileName.getBytes(Context.CHARSET);
-		}
-	}
-	
 }

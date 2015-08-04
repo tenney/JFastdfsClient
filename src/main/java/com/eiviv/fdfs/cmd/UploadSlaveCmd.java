@@ -1,8 +1,8 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
@@ -12,7 +12,8 @@ import com.eiviv.fdfs.utils.ByteUtils;
 
 public class UploadSlaveCmd extends AbstractCmd<String> {
 	
-	private File file;
+	private InputStream inputStream;
+	private long size;
 	private String fileId;
 	private String prefix;
 	private String extName;
@@ -25,8 +26,9 @@ public class UploadSlaveCmd extends AbstractCmd<String> {
 	 * @param prefix 副本文件名后缀
 	 * @param ext 扩展名
 	 */
-	public UploadSlaveCmd(File file, String fileId, String prefix, String extName) {
-		this.file = file;
+	public UploadSlaveCmd(InputStream inputStream, long size, String fileId, String prefix, String extName) {
+		this.inputStream = inputStream;
+		this.size = size;
 		this.fileId = fileId;
 		this.prefix = prefix;
 		this.extName = extName;
@@ -35,9 +37,9 @@ public class UploadSlaveCmd extends AbstractCmd<String> {
 	@Override
 	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
 		byte[] fileIdNameByte = ByteUtils.long2bytes(fileId.length());
-		byte[] fileSizeLenByte = ByteUtils.long2bytes(file.length());
-		byte[] prefixByte = prefix.getBytes(Context.CHARSET);
-		byte[] fileExtNameByte = getFileExtNameByte(extName);
+		byte[] fileSizeLenByte = ByteUtils.long2bytes(size);
+		byte[] prefixByte = prefix != null ? prefix.getBytes(Context.CHARSET) : new byte[0];
+		byte[] fileExtNameByte = extName != null ? extName.getBytes(Context.CHARSET) : new byte[0];
 		int fileExtNameByteLen = fileExtNameByte.length;
 		
 		if (fileExtNameByteLen > Context.FDFS_FILE_EXT_NAME_MAX_LEN) {
@@ -58,7 +60,7 @@ public class UploadSlaveCmd extends AbstractCmd<String> {
 		System.arraycopy(fileIdByte, 0, body, 2 * Context.FDFS_PROTO_PKG_LEN_SIZE + Context.FDFS_FILE_PREFIX_MAX_LEN
 				+ Context.FDFS_FILE_EXT_NAME_MAX_LEN, fileIdByte.length);
 		
-		return new RequestBody(Context.STORAGE_PROTO_CMD_UPLOAD_SLAVE_FILE, body, file);
+		return new RequestBody(Context.STORAGE_PROTO_CMD_UPLOAD_SLAVE_FILE, body, inputStream, size);
 	}
 	
 	@Override
@@ -92,20 +94,4 @@ public class UploadSlaveCmd extends AbstractCmd<String> {
 		
 		return result;
 	}
-	
-	/**
-	 * 扩展名 byte
-	 * 
-	 * @param extName
-	 * @return
-	 */
-	private byte[] getFileExtNameByte(String extName) {
-		
-		if (extName != null && extName.length() > 0) {
-			return extName.getBytes(Context.CHARSET);
-		}
-		
-		return new byte[0];
-	}
-	
 }

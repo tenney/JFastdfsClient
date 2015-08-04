@@ -12,7 +12,7 @@ public class DownloadTest {
 	
 	@Test
 	public void test() {
-		String fileId = "group1/M00/00/0F/rBDLZFW7y86ASgSBAAvqH_kipG8289.jpg";
+		String fileId = "group1/M00/00/0F/rBDLZFXA_36AZwg8AAvqH_kipG8002.jpg";
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		File file = new File("E:/test.jpg");
 		
