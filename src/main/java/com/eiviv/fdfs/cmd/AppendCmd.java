@@ -27,11 +27,11 @@ public class AppendCmd extends AbstractCmd<Boolean> {
 	
 	@Override
 	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
+		byte[] fileNameLenByte = ByteUtils.long2bytes(fileName.length());
 		byte[] fileSizeByte = ByteUtils.long2bytes(fileByte.length);
 		byte[] fileNameByte = fileName.getBytes(Context.CHARSET);
-		byte[] fileNameLenByte = ByteUtils.long2bytes(fileName.length());
 		
-		byte[] body = new byte[fileSizeByte.length + fileNameByte.length + fileNameLenByte.length];
+		byte[] body = new byte[2 * Context.FDFS_PROTO_PKG_LEN_SIZE + fileNameByte.length];
 		
 		Arrays.fill(body, (byte) 0);
 		
