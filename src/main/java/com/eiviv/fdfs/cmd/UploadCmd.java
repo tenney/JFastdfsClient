@@ -1,12 +1,12 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
@@ -32,22 +32,25 @@ public class UploadCmd extends AbstractCmd<String> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
-		byte[] body = new byte[15];
-		Arrays.fill(body, (byte) 0);
-		body[0] = storePathIndex;
+	protected RequestContext getRequestContext() {
 		byte[] fileSizeByte = ByteUtils.long2bytes(size);
 		byte[] fileExtNameByte = extName != null ? extName.getBytes(Context.CHARSET) : new byte[0];
+		byte[] params = new byte[15];
+		
 		int fileExtNameByteLen = fileExtNameByte.length;
 		
 		if (fileExtNameByteLen > Context.FDFS_FILE_EXT_NAME_MAX_LEN) {
 			fileExtNameByteLen = Context.FDFS_FILE_EXT_NAME_MAX_LEN;
 		}
 		
-		System.arraycopy(fileSizeByte, 0, body, 1, fileSizeByte.length);
-		System.arraycopy(fileExtNameByte, 0, body, fileSizeByte.length + 1, fileExtNameByteLen);
+		Arrays.fill(params, (byte) 0);
 		
-		return new RequestBody(Context.STORAGE_PROTO_CMD_UPLOAD_FILE, body, inputStream, size);
+		params[0] = storePathIndex;
+		
+		System.arraycopy(fileSizeByte, 0, params, 1, fileSizeByte.length);
+		System.arraycopy(fileExtNameByte, 0, params, fileSizeByte.length + 1, fileExtNameByteLen);
+		
+		return new RequestContext(Context.STORAGE_PROTO_CMD_UPLOAD_FILE, params, inputStream, size);
 	}
 	
 	@Override
@@ -56,25 +59,20 @@ public class UploadCmd extends AbstractCmd<String> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.STORAGE_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return -1;
 	}
 	
 	@Override
-	protected Result<String> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
-		Result<String> result = new Result<String>(response.getCode());
+	protected Result<String> callback(ResponseContext responseContext) throws FastdfsClientException {
+		Result<String> result = new Result<String>(responseContext.getCode());
 		
-		if (!response.isSuccess()) {
+		if (!responseContext.isSuccess()) {
 			result.setMessage("Error");
 			return result;
 		}
 		
-		byte[] data = response.getData();
+		byte[] data = responseContext.getData();
 		String group = new String(data, 0, Context.FDFS_GROUP_NAME_MAX_LEN).trim();
 		String remoteFileName = new String(data, Context.FDFS_GROUP_NAME_MAX_LEN, data.length - Context.FDFS_GROUP_NAME_MAX_LEN);
 		result.setData(group + "/" + remoteFileName);

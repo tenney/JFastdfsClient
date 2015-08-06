@@ -21,7 +21,7 @@ public class AppendTest {
 		
 		byte[] tb = "ABCD".getBytes(Context.CHARSET);
 		
-		boolean result = fastdfsClient.appendFile(fileId, tb);
+		boolean result = fastdfsClient.append(fileId, tb);
 		
 		System.out.println(result);
 		

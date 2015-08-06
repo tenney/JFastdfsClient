@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
@@ -17,149 +18,158 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	/**
 	 * socket write
 	 * 
-	 * @param socket socket
-	 * @throws IOException
+	 * @param socket
+	 * @throws Exception
 	 */
-	public final void request(Socket socket) throws IOException {
-		OutputStream os = socket.getOutputStream();
-		RequestBody requestBody = getRequestBody();
+	public final void request(Socket socket) throws Exception {
+		OutputStream sockectOutputStream = socket.getOutputStream();
+		RequestContext reqCon = getRequestContext();
 		
-		if (requestBody == null) {
-			new IllegalArgumentException("requestBody can not be null");
+		if (reqCon == null) {
+			throw new IllegalArgumentException("request context can not be null");
 		}
 		
-		byte[] body = requestBody.getBody();
+		byte[] params = reqCon.getRequestParams();
 		
-		if (body == null) {
-			body = new byte[0];
+		if (params == null) {
+			params = new byte[0];
 		}
 		
-		byte[] header = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2 + body.length];
+		byte[] reqEntity = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2 + params.length];
 		
-		Arrays.fill(header, (byte) 0);
+		Arrays.fill(reqEntity, (byte) 0);
 		
-		InputStream is = requestBody.getInputStream();
-		byte[] fileByte = requestBody.getFileByte();
-		byte[] bodyLenByte = null;
+		InputStream inputStream = reqCon.getInputStream();
+		byte[] multipartByte = reqCon.getMultipartByte();
+		byte[] reqConLenByte = null;
 		
-		if (is != null || fileByte != null) {
-			bodyLenByte = ByteUtils.long2bytes(body.length + requestBody.getSize());
+		if (inputStream != null || multipartByte != null) {
+			reqConLenByte = ByteUtils.long2bytes(params.length + reqCon.getMultipartSize());
 		} else {
-			bodyLenByte = ByteUtils.long2bytes(body.length);
+			reqConLenByte = ByteUtils.long2bytes(params.length);
 		}
 		
-		System.arraycopy(bodyLenByte, 0, header, 0, bodyLenByte.length);
-		System.arraycopy(body, 0, header, Context.FDFS_PROTO_PKG_LEN_SIZE + 2, body.length);
+		System.arraycopy(reqConLenByte, 0, reqEntity, 0, reqConLenByte.length);
+		System.arraycopy(params, 0, reqEntity, Context.FDFS_PROTO_PKG_LEN_SIZE + 2, params.length);
 		
-		header[Context.PROTO_HEADER_CMD_INDEX] = requestBody.getRequestCmdCode();
-		header[Context.PROTO_HEADER_STATUS_INDEX] = (byte) 0;
+		reqEntity[Context.PROTO_HEADER_CMD_INDEX] = reqCon.getRequestCmdCode();
+		reqEntity[Context.PROTO_HEADER_STATUS_INDEX] = (byte) 0;
 		
-		os.write(header);
+		sockectOutputStream.write(reqEntity);
 		
-		if (is != null) {
+		if (inputStream != null) {
 			byte[] readBuff = new byte[256 * 1024];
 			int readLen = 0;
 			
 			try {
-				while ((readLen = is.read(readBuff)) != -1) {
-					os.write(readBuff, 0, readLen);
+				while ((readLen = inputStream.read(readBuff)) != -1) {
+					sockectOutputStream.write(readBuff, 0, readLen);
 				}
 			} catch (IOException e) {
 				throw e;
 			} finally {
-				if (is != null) {
+				if (inputStream != null) {
 					try {
-						is.close();
+						inputStream.close();
 					} catch (IOException e) {
 						throw e;
 					} finally {
-						is = null;
+						inputStream = null;
 					}
 				}
 			}
-		} else if (fileByte != null) {
-			os.write(fileByte, 0, fileByte.length);
+		} else if (multipartByte != null) {
+			sockectOutputStream.write(multipartByte, 0, multipartByte.length);
 		}
 	}
 	
 	@Override
-	public final Result<T> exec(Socket socket) throws IOException {
-		request(socket);
+	public final Result<T> exec(Socket socket) throws FastdfsClientException {
+		
+		try {
+			request(socket);
+		} catch (Exception e) {
+			throw new FastdfsClientException(e);
+		}
 		
 		OutputStream writer = getOutputStream();
 		
 		if (writer == null) {
-			return callback(new Response(Context.SUCCESS_CODE, null));
+			return callback(new ResponseContext(Context.SUCCESS_CODE));
 		}
 		
+		byte[] resEntity = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2];
+		
 		try {
-			byte[] header = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2];
 			InputStream sockectInputStream = socket.getInputStream();
-			int headerLen = sockectInputStream.read(header);
+			int resEntityLen = sockectInputStream.read(resEntity);
 			
-			if (headerLen != header.length) {
-				throw new IOException("recv package size " + headerLen + " != " + header.length);
+			if (resEntityLen != resEntity.length) {
+				throw new FastdfsClientException("recv package size " + resEntityLen + " != " + resEntity.length);
 			}
 			
-			byte resCmdCode = getResponseCmdCode();
+			byte resCmdCode = Context.STORAGE_PROTO_CMD_RESP;
+			byte recvCmdCode = resEntity[Context.PROTO_HEADER_CMD_INDEX];
 			
-			if (header[Context.PROTO_HEADER_CMD_INDEX] != resCmdCode) {
-				throw new IOException("recv cmd: " + header[Context.PROTO_HEADER_CMD_INDEX] + " is not correct, expect cmd: " + resCmdCode);
+			if (recvCmdCode != resCmdCode) {
+				throw new FastdfsClientException("recv cmd: " + recvCmdCode + " is not correct, expect cmd: " + resCmdCode);
 			}
 			
-			if (header[Context.PROTO_HEADER_STATUS_INDEX] != Context.SUCCESS_CODE) {
-				return callback(new Response(Context.PROTO_HEADER_STATUS_INDEX, null));
+			byte recvStatus = resEntity[Context.PROTO_HEADER_STATUS_INDEX];
+			
+			if (recvStatus != Context.SUCCESS_CODE) {
+				return callback(new ResponseContext(recvStatus));
 			}
 			
-			long bodyLen = ByteUtils.bytes2long(header, 0);
+			long resEntityL = ByteUtils.bytes2long(resEntity, 0);
 			
-			if (bodyLen < 0) {
-				throw new IOException("recv body length: " + bodyLen + " < 0!");
+			if (resEntityL < 0) {
+				throw new FastdfsClientException("recv body length: " + resEntityL + " < 0!");
 			}
 			
-			long fixedBodyLen = getFixedBodyLength();
+			long fixedResEntityL = getLongOfFixedResponseEntity();
 			
-			if (fixedBodyLen >= 0 && bodyLen != fixedBodyLen) {
-				throw new IOException("recv body length: " + bodyLen + " is not correct, expect length: " + fixedBodyLen);
+			if (fixedResEntityL >= 0 && resEntityL != fixedResEntityL) {
+				throw new FastdfsClientException("recv body length: " + resEntityL + " is not correct, expect length: " + fixedResEntityL);
 			}
 			
 			byte[] buff = new byte[2 * 1024];
 			int totalBytes = 0;
-			int remainBytes = (int) bodyLen;
+			int remainBytes = (int) resEntityL;
 			
-			while (totalBytes < bodyLen) {
+			while (totalBytes < resEntityL) {
 				int len = remainBytes;
 				
 				if (len > buff.length) {
 					len = buff.length;
 				}
 				
-				if ((headerLen = sockectInputStream.read(buff, 0, len)) < 0) {
+				if ((resEntityLen = sockectInputStream.read(buff, 0, len)) < 0) {
 					break;
 				}
 				
-				writer.write(buff, 0, headerLen);
-				totalBytes += headerLen;
-				remainBytes -= headerLen;
+				writer.write(buff, 0, resEntityLen);
+				totalBytes += resEntityLen;
+				remainBytes -= resEntityLen;
 			}
 			
-			if (totalBytes != bodyLen) {
-				throw new IOException("recv package size " + totalBytes + " != " + bodyLen);
+			if (totalBytes != resEntityL) {
+				throw new IOException("recv package size " + totalBytes + " != " + resEntityL);
 			}
 			
 			if (writer instanceof ByteArrayOutputStream) {
-				return callback(new Response(Context.SUCCESS_CODE, ((ByteArrayOutputStream) writer).toByteArray()));
+				return callback(new ResponseContext(Context.SUCCESS_CODE, ((ByteArrayOutputStream) writer).toByteArray()));
 			}
 			
-			return callback(new Response(Context.SUCCESS_CODE, null));
+			return callback(new ResponseContext(Context.SUCCESS_CODE, null));
 		} catch (IOException e) {
-			throw e;
+			throw new FastdfsClientException(e);
 		} finally {
 			if (writer != null) {
 				try {
 					writer.close();
 				} catch (IOException e) {
-					throw e;
+					throw new FastdfsClientException(e);
 				} finally {
 					writer = null;
 				}
@@ -167,33 +177,33 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 		}
 	}
 	
-	protected static final class RequestBody {
+	protected static final class RequestContext {
 		
 		private byte requestCmdCode;
-		private byte[] body;
-		private byte[] fileByte;
+		private byte[] requestParams;
+		private byte[] multipartByte;
 		private InputStream inputStream;
-		private long size;
+		private long multipartSize;
 		
-		public RequestBody(byte requestCmdCode) {
+		public RequestContext(byte requestCmdCode) {
 			this.requestCmdCode = requestCmdCode;
 		}
 		
-		public RequestBody(byte requestCmdCode, byte[] body) {
+		public RequestContext(byte requestCmdCode, byte[] requestParams) {
 			this(requestCmdCode);
-			this.body = body;
+			this.requestParams = requestParams;
 		}
 		
-		public RequestBody(byte requestCmdCode, byte[] body, InputStream inputStream, long size) {
-			this(requestCmdCode, body);
+		public RequestContext(byte requestCmdCode, byte[] requestParams, InputStream inputStream, long multipartSize) {
+			this(requestCmdCode, requestParams);
 			this.inputStream = inputStream;
-			this.size = size;
+			this.multipartSize = multipartSize;
 		}
 		
-		public RequestBody(byte requestCmdCode, byte[] body, byte[] fileByte) {
-			this(requestCmdCode, body);
-			this.fileByte = fileByte;
-			this.size = fileByte.length;
+		public RequestContext(byte requestCmdCode, byte[] requestParams, byte[] multipartByte) {
+			this(requestCmdCode, requestParams);
+			this.multipartByte = multipartByte;
+			this.multipartSize = multipartByte.length;
 		}
 		
 		public byte getRequestCmdCode() {
@@ -204,20 +214,20 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			this.requestCmdCode = requestCmdCode;
 		}
 		
-		public byte[] getBody() {
-			return body;
+		public byte[] getRequestParams() {
+			return requestParams;
 		}
 		
-		public void setBody(byte[] body) {
-			this.body = body;
+		public void setRequestParams(byte[] requestParams) {
+			this.requestParams = requestParams;
 		}
 		
-		public byte[] getFileByte() {
-			return fileByte;
+		public byte[] getMultipartByte() {
+			return multipartByte;
 		}
 		
-		public void setFileByte(byte[] fileByte) {
-			this.fileByte = fileByte;
+		public void setMultipartByte(byte[] multipartByte) {
+			this.multipartByte = multipartByte;
 		}
 		
 		public InputStream getInputStream() {
@@ -228,23 +238,27 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			this.inputStream = inputStream;
 		}
 		
-		public long getSize() {
-			return size;
+		public long getMultipartSize() {
+			return multipartSize;
 		}
 		
-		public void setSize(long size) {
-			this.size = size;
+		public void setMultipartSize(long multipartSize) {
+			this.multipartSize = multipartSize;
 		}
 		
 	}
 	
-	protected static final class Response {
+	protected static final class ResponseContext {
 		
 		private int code;
 		private byte[] data;
 		
-		public Response(int code, byte[] data) {
+		public ResponseContext(int code) {
 			this.code = code;
+		}
+		
+		public ResponseContext(int code, byte[] data) {
+			this(code);
 			this.data = data;
 		}
 		
@@ -275,7 +289,7 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	 * 
 	 * @return
 	 */
-	protected abstract RequestBody getRequestBody();
+	protected abstract RequestContext getRequestContext();
 	
 	/**
 	 * 定向输出
@@ -285,18 +299,11 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	protected abstract OutputStream getOutputStream();
 	
 	/**
-	 * 获取 response cmd
-	 * 
-	 * @return
-	 */
-	protected abstract byte getResponseCmdCode();
-	
-	/**
 	 * 获取respone body 固定长度
 	 * 
 	 * @return
 	 */
-	protected abstract long getFixedBodyLength();
+	protected abstract long getLongOfFixedResponseEntity();
 	
 	/**
 	 * 处理完成回调方法
@@ -305,6 +312,6 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	 * @return
 	 * @throws IOException
 	 */
-	protected abstract Result<T> callback(Response response) throws IOException;
+	protected abstract Result<T> callback(ResponseContext responseContext) throws FastdfsClientException;
 	
 }

@@ -1,12 +1,12 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.model.StorageInfo;
 
@@ -36,35 +36,35 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
-		
+	protected RequestContext getRequestContext() {
 		byte[] groupByte = group.getBytes(Context.CHARSET);
 		byte[] ipByte = null;
-		byte[] body = null;
+		byte[] params = null;
 		
 		if (ip != null && ip.trim() != "") {
 			ipByte = ip.getBytes(Context.CHARSET);
-			body = new byte[Context.FDFS_GROUP_NAME_MAX_LEN + ipByte.length];
+			params = new byte[Context.FDFS_GROUP_NAME_MAX_LEN + ipByte.length];
 		} else {
-			body = new byte[Context.FDFS_GROUP_NAME_MAX_LEN];
+			params = new byte[Context.FDFS_GROUP_NAME_MAX_LEN];
 		}
 		
-		int group_len;
+		int groupLen;
 		
 		if (groupByte.length <= Context.FDFS_GROUP_NAME_MAX_LEN) {
-			group_len = groupByte.length;
+			groupLen = groupByte.length;
 		} else {
-			group_len = Context.FDFS_GROUP_NAME_MAX_LEN;
+			groupLen = Context.FDFS_GROUP_NAME_MAX_LEN;
 		}
 		
-		Arrays.fill(body, (byte) 0);
-		System.arraycopy(groupByte, 0, body, 0, group_len);
+		Arrays.fill(params, (byte) 0);
+		
+		System.arraycopy(groupByte, 0, params, 0, groupLen);
 		
 		if (ipByte != null) {
-			System.arraycopy(ipByte, 0, body, Context.FDFS_GROUP_NAME_MAX_LEN, ipByte.length);
+			System.arraycopy(ipByte, 0, params, Context.FDFS_GROUP_NAME_MAX_LEN, ipByte.length);
 		}
 		
-		return new RequestBody(Context.TRACKER_PROTO_CMD_SERVER_LIST_STORAGE, body);
+		return new RequestContext(Context.TRACKER_PROTO_CMD_SERVER_LIST_STORAGE, params);
 	}
 	
 	@Override
@@ -73,27 +73,22 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.TRACKER_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return -1;
 	}
 	
 	@Override
-	protected Result<ArrayList<StorageInfo>> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
+	protected Result<ArrayList<StorageInfo>> callback(ResponseContext responseContext) throws FastdfsClientException {
 		
-		if (!response.isSuccess()) {
-			return new Result<ArrayList<StorageInfo>>(response.getCode(), "Error");
+		if (!responseContext.isSuccess()) {
+			return new Result<ArrayList<StorageInfo>>(responseContext.getCode(), "Error");
 		}
 		
-		byte[] data = response.getData();
+		byte[] data = responseContext.getData();
 		int dataLength = data.length;
 		
 		if (dataLength % StorageInfo.BYTE_SIZE != 0) {
-			throw new IOException("recv body length: " + data.length + " is not correct");
+			throw new FastdfsClientException("recv body length: " + data.length + " is not correct");
 		}
 		
 		ArrayList<StorageInfo> storageInfos = new ArrayList<StorageInfo>();
@@ -105,7 +100,7 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 			offset += StorageInfo.BYTE_SIZE;
 		}
 		
-		return new Result<ArrayList<StorageInfo>>(response.getCode(), storageInfos);
+		return new Result<ArrayList<StorageInfo>>(responseContext.getCode(), storageInfos);
 	}
 	
 }

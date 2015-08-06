@@ -1,10 +1,10 @@
 package com.eiviv.fdfs.cmd;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
@@ -57,27 +57,27 @@ public class DownloadCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
+	protected RequestContext getRequestContext() {
 		byte[] offsetByte = ByteUtils.long2bytes(offset);
 		byte[] sizeByte = ByteUtils.long2bytes(size);
 		byte[] groupByte = group.getBytes(Context.CHARSET);
 		byte[] filenameByte = fileName.getBytes(Context.CHARSET);
+		byte[] params = new byte[offsetByte.length + sizeByte.length + Context.FDFS_GROUP_NAME_MAX_LEN + filenameByte.length];
+		
 		int groupLen = groupByte.length;
 		
 		if (groupLen > Context.FDFS_GROUP_NAME_MAX_LEN) {
 			groupLen = Context.FDFS_GROUP_NAME_MAX_LEN;
 		}
 		
-		byte[] body = new byte[offsetByte.length + sizeByte.length + Context.FDFS_GROUP_NAME_MAX_LEN + filenameByte.length];
+		Arrays.fill(params, (byte) 0);
 		
-		Arrays.fill(body, (byte) 0);
+		System.arraycopy(offsetByte, 0, params, 0, offsetByte.length);
+		System.arraycopy(sizeByte, 0, params, offsetByte.length, sizeByte.length);
+		System.arraycopy(groupByte, 0, params, offsetByte.length + sizeByte.length, groupLen);
+		System.arraycopy(filenameByte, 0, params, offsetByte.length + sizeByte.length + Context.FDFS_GROUP_NAME_MAX_LEN, filenameByte.length);
 		
-		System.arraycopy(offsetByte, 0, body, 0, offsetByte.length);
-		System.arraycopy(sizeByte, 0, body, offsetByte.length, sizeByte.length);
-		System.arraycopy(groupByte, 0, body, offsetByte.length + sizeByte.length, groupLen);
-		System.arraycopy(filenameByte, 0, body, offsetByte.length + sizeByte.length + Context.FDFS_GROUP_NAME_MAX_LEN, filenameByte.length);
-		
-		return new RequestBody(Context.STORAGE_PROTO_CMD_DOWNLOAD_FILE, body);
+		return new RequestContext(Context.STORAGE_PROTO_CMD_DOWNLOAD_FILE, params);
 	}
 	
 	@Override
@@ -86,18 +86,13 @@ public class DownloadCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.STORAGE_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return -1;
 	}
 	
 	@Override
-	protected Result<Boolean> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
-		return new Result<Boolean>(response.getCode(), response.isSuccess());
+	protected Result<Boolean> callback(ResponseContext responseContext) throws FastdfsClientException {
+		return new Result<Boolean>(responseContext.getCode(), responseContext.isSuccess());
 	}
 	
 }

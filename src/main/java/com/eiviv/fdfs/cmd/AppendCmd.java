@@ -1,11 +1,11 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
@@ -26,20 +26,19 @@ public class AppendCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
+	protected RequestContext getRequestContext() {
 		byte[] fileNameLenByte = ByteUtils.long2bytes(fileName.length());
 		byte[] fileSizeByte = ByteUtils.long2bytes(fileByte.length);
 		byte[] fileNameByte = fileName.getBytes(Context.CHARSET);
+		byte[] params = new byte[2 * Context.FDFS_PROTO_PKG_LEN_SIZE + fileNameByte.length];
 		
-		byte[] body = new byte[2 * Context.FDFS_PROTO_PKG_LEN_SIZE + fileNameByte.length];
+		Arrays.fill(params, (byte) 0);
 		
-		Arrays.fill(body, (byte) 0);
+		System.arraycopy(fileNameLenByte, 0, params, 0, fileNameLenByte.length);
+		System.arraycopy(fileSizeByte, 0, params, fileNameLenByte.length, fileSizeByte.length);
+		System.arraycopy(fileNameByte, 0, params, fileNameLenByte.length + fileSizeByte.length, fileNameByte.length);
 		
-		System.arraycopy(fileNameLenByte, 0, body, 0, fileNameLenByte.length);
-		System.arraycopy(fileSizeByte, 0, body, fileNameLenByte.length, fileSizeByte.length);
-		System.arraycopy(fileNameByte, 0, body, fileNameLenByte.length + fileSizeByte.length, fileNameByte.length);
-		
-		return new RequestBody(Context.STORAGE_PROTO_CMD_APPEND_FILE, body, fileByte);
+		return new RequestContext(Context.STORAGE_PROTO_CMD_APPEND_FILE, params, fileByte);
 	}
 	
 	@Override
@@ -48,18 +47,13 @@ public class AppendCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.STORAGE_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return 0;
 	}
 	
 	@Override
-	protected Result<Boolean> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
-		return new Result<Boolean>(response.getCode(), response.isSuccess());
+	protected Result<Boolean> callback(ResponseContext responseContext) throws FastdfsClientException {
+		return new Result<Boolean>(responseContext.getCode(), responseContext.isSuccess());
 	}
 	
 }

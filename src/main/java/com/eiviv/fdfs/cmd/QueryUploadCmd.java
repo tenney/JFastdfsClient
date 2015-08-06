@@ -1,11 +1,11 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.model.UploadStorage;
 import com.eiviv.fdfs.utils.ByteUtils;
@@ -30,28 +30,29 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
+	protected RequestContext getRequestContext() {
 		byte requestCmdCode = Context.TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ONE;
 		
 		if (group == null || group.trim() == "") {
-			return new RequestBody(requestCmdCode);
+			return new RequestContext(requestCmdCode);
 		}
 		
 		byte[] bs = group.getBytes(Context.CHARSET);
-		byte[] body = new byte[Context.FDFS_GROUP_NAME_MAX_LEN];
+		byte[] params = new byte[Context.FDFS_GROUP_NAME_MAX_LEN];
 		
-		int group_len;
+		int groupLen;
 		
 		if (bs.length <= Context.FDFS_GROUP_NAME_MAX_LEN) {
-			group_len = bs.length;
+			groupLen = bs.length;
 		} else {
-			group_len = Context.FDFS_GROUP_NAME_MAX_LEN;
+			groupLen = Context.FDFS_GROUP_NAME_MAX_LEN;
 		}
 		
-		Arrays.fill(body, (byte) 0);
-		System.arraycopy(bs, 0, body, 0, group_len);
+		Arrays.fill(params, (byte) 0);
 		
-		return new RequestBody(requestCmdCode, body);
+		System.arraycopy(bs, 0, params, 0, groupLen);
+		
+		return new RequestContext(requestCmdCode, params);
 	}
 	
 	@Override
@@ -60,29 +61,24 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.TRACKER_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return Context.TRACKER_QUERY_STORAGE_STORE_BODY_LEN;
 	}
 	
 	@Override
-	protected Result<UploadStorage> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
+	protected Result<UploadStorage> callback(ResponseContext responseContext) throws FastdfsClientException {
 		
-		if (!response.isSuccess()) {
-			return new Result<UploadStorage>(response.getCode(), "Error");
+		if (!responseContext.isSuccess()) {
+			return new Result<UploadStorage>(responseContext.getCode(), "Error");
 		}
 		
-		byte[] data = response.getData();
+		byte[] data = responseContext.getData();
 		String ip_addr = new String(data, Context.FDFS_GROUP_NAME_MAX_LEN, Context.FDFS_IPADDR_SIZE - 1).trim();
 		int port = (int) ByteUtils.bytes2long(data, Context.FDFS_GROUP_NAME_MAX_LEN + Context.FDFS_IPADDR_SIZE - 1);
 		byte storePath = data[Context.TRACKER_QUERY_STORAGE_STORE_BODY_LEN - 1];
 		UploadStorage uploadStorage = new UploadStorage(ip_addr + ":" + String.valueOf(port), storePath);
 		
-		return new Result<UploadStorage>(response.getCode(), uploadStorage);
+		return new Result<UploadStorage>(responseContext.getCode(), uploadStorage);
 	}
 	
 }

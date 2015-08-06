@@ -3,6 +3,7 @@ package com.eiviv.fdfs.client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 
 import com.eiviv.fdfs.cmd.CloseCmd;
@@ -13,6 +14,7 @@ import com.eiviv.fdfs.cmd.QueryStorageInfoCmd;
 import com.eiviv.fdfs.cmd.QueryUpdateCmd;
 import com.eiviv.fdfs.cmd.QueryUploadCmd;
 import com.eiviv.fdfs.config.FastdfsClientConfig;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.GroupInfo;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.model.StorageInfo;
@@ -56,9 +58,9 @@ public class TrackerClient extends AbstractClient {
 	 * 获取上传 storage
 	 * 
 	 * @return
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	public Result<UploadStorage> getUploadStorage() throws IOException {
+	public Result<UploadStorage> getUploadStorage() throws FastdfsClientException {
 		Cmd<UploadStorage> command = new QueryUploadCmd();
 		
 		return command.exec(getSocket());
@@ -70,9 +72,9 @@ public class TrackerClient extends AbstractClient {
 	 * @param group 组名
 	 * @param fileName 文件名
 	 * @return 更新 storage 地址
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	public Result<String> getUpdateStorageAddr(String group, String fileName) throws IOException {
+	public Result<String> getUpdateStorageAddr(String group, String fileName) throws FastdfsClientException {
 		Cmd<String> cmd = new QueryUpdateCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
@@ -84,9 +86,9 @@ public class TrackerClient extends AbstractClient {
 	 * @param group 组名
 	 * @param fileName 文件名
 	 * @return 下载 storage 地址
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	public Result<String> getDownloadStorageAddr(String group, String fileName) throws IOException {
+	public Result<String> getDownloadStorageAddr(String group, String fileName) throws FastdfsClientException {
 		Cmd<String> cmd = new QueryDownloadCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
@@ -96,9 +98,9 @@ public class TrackerClient extends AbstractClient {
 	 * 获取组信息
 	 * 
 	 * @return 组信息
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	public Result<ArrayList<GroupInfo>> getGroupInfos() throws IOException {
+	public Result<ArrayList<GroupInfo>> getGroupInfos() throws FastdfsClientException {
 		Cmd<ArrayList<GroupInfo>> cmd = new QueryGroupInfoCmd();
 		
 		return cmd.exec(getSocket());
@@ -109,24 +111,28 @@ public class TrackerClient extends AbstractClient {
 	 * 
 	 * @param group 组名
 	 * @return StorageInfo 集合
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	public Result<ArrayList<StorageInfo>> getStorageInfos(String group) throws IOException {
+	public Result<ArrayList<StorageInfo>> getStorageInfos(String group) throws FastdfsClientException {
 		Cmd<ArrayList<StorageInfo>> cmd = new QueryStorageInfoCmd(group);
 		
 		return cmd.exec(getSocket());
 	}
 	
 	/**
-	 * 关闭socket连接
+	 * 关闭socket
 	 * 
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	public void close() throws IOException {
+	public void close() throws FastdfsClientException {
 		Socket socket = getSocket();
 		Cmd<Boolean> cmd = new CloseCmd();
 		cmd.exec(socket);
-		socket.close();
+		try {
+			socket.close();
+		} catch (IOException e) {
+			throw new FastdfsClientException(e);
+		}
 		socket = null;
 	}
 	
@@ -134,14 +140,21 @@ public class TrackerClient extends AbstractClient {
 	 * 获取socket
 	 * 
 	 * @return
-	 * @throws IOException
+	 * @throws FastdfsClientException
 	 */
-	private Socket getSocket() throws IOException {
+	private Socket getSocket() throws FastdfsClientException {
 		
 		if (socket == null) {
 			socket = new Socket();
-			socket.setSoTimeout(networkTimeout);
-			socket.connect(new InetSocketAddress(host, port), connectTimeout);
+			
+			try {
+				socket.setSoTimeout(networkTimeout);
+				socket.connect(new InetSocketAddress(host, port), connectTimeout);
+			} catch (SocketException e) {
+				throw new FastdfsClientException(e);
+			} catch (IOException e) {
+				throw new FastdfsClientException(e);
+			}
 		}
 		
 		return socket;

@@ -1,12 +1,12 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Map;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
@@ -30,37 +30,37 @@ public class UpdateMetaDataCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected com.eiviv.fdfs.cmd.AbstractCmd.RequestBody getRequestBody() {
+	protected RequestContext getRequestContext() {
 		byte[] groupByte = group.getBytes(Context.CHARSET);
-		int group_len = groupByte.length;
-		
-		if (group_len > Context.FDFS_GROUP_NAME_MAX_LEN) {
-			group_len = Context.FDFS_GROUP_NAME_MAX_LEN;
-		}
-		
 		byte[] fileNameByte = fileName.getBytes(Context.CHARSET);
 		byte[] fileNameSizeByte = ByteUtils.long2bytes(fileNameByte.length);
 		byte[] metaDataByte = metaDataToStr(metaData).getBytes(Context.CHARSET);
 		byte[] metaDataSizeByte = ByteUtils.long2bytes(metaDataByte.length);
+		byte[] params = new byte[2 * Context.FDFS_PROTO_PKG_LEN_SIZE + 1 + Context.FDFS_GROUP_NAME_MAX_LEN + fileNameByte.length
+				+ metaDataByte.length];
 		
-		byte[] body = new byte[2 * Context.FDFS_PROTO_PKG_LEN_SIZE + 1 + Context.FDFS_GROUP_NAME_MAX_LEN + fileNameByte.length + metaDataByte.length];
+		int groupLen = groupByte.length;
 		
-		Arrays.fill(body, (byte) 0);
+		if (groupLen > Context.FDFS_GROUP_NAME_MAX_LEN) {
+			groupLen = Context.FDFS_GROUP_NAME_MAX_LEN;
+		}
+		
+		Arrays.fill(params, (byte) 0);
 		
 		int pos = 0;
-		System.arraycopy(fileNameSizeByte, 0, body, pos, fileNameSizeByte.length);
+		System.arraycopy(fileNameSizeByte, 0, params, pos, fileNameSizeByte.length);
 		pos += Context.FDFS_PROTO_PKG_LEN_SIZE;
-		System.arraycopy(metaDataSizeByte, 0, body, pos, metaDataSizeByte.length);
+		System.arraycopy(metaDataSizeByte, 0, params, pos, metaDataSizeByte.length);
 		pos += Context.FDFS_PROTO_PKG_LEN_SIZE;
-		body[pos] = Context.STORAGE_SET_METADATA_FLAG_OVERWRITE;
+		params[pos] = Context.STORAGE_SET_METADATA_FLAG_OVERWRITE;
 		pos += 1;
-		System.arraycopy(groupByte, 0, body, pos, group_len);
+		System.arraycopy(groupByte, 0, params, pos, groupLen);
 		pos += Context.FDFS_GROUP_NAME_MAX_LEN;
-		System.arraycopy(fileNameByte, 0, body, pos, fileNameByte.length);
+		System.arraycopy(fileNameByte, 0, params, pos, fileNameByte.length);
 		pos += fileNameByte.length;
-		System.arraycopy(metaDataByte, 0, body, pos, metaDataByte.length);
+		System.arraycopy(metaDataByte, 0, params, pos, metaDataByte.length);
 		
-		return new RequestBody(Context.STORAGE_PROTO_CMD_SET_METADATA, body);
+		return new RequestContext(Context.STORAGE_PROTO_CMD_SET_METADATA, params);
 	}
 	
 	@Override
@@ -69,18 +69,13 @@ public class UpdateMetaDataCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.STORAGE_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return 0;
 	}
 	
 	@Override
-	protected Result<Boolean> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
-		return new Result<Boolean>(response.getCode(), response.isSuccess());
+	protected Result<Boolean> callback(ResponseContext responseContext) throws FastdfsClientException {
+		return new Result<Boolean>(responseContext.getCode(), responseContext.isSuccess());
 	}
 	
 	/**

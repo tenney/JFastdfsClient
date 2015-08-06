@@ -7,6 +7,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import com.eiviv.fdfs.config.FastdfsClientConfig;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 
 public class TrackerClientFactory implements KeyedPooledObjectFactory<String, TrackerClient> {
 	
@@ -37,7 +38,11 @@ public class TrackerClientFactory implements KeyedPooledObjectFactory<String, Tr
 	@Override
 	public void destroyObject(String key, PooledObject<TrackerClient> pooledTrackerClient) throws IOException {
 		TrackerClient trackerClient = pooledTrackerClient.getObject();
-		trackerClient.close();
+		try {
+			trackerClient.close();
+		} catch (FastdfsClientException e) {
+			throw new IOException(e);
+		}
 	}
 	
 	@Override

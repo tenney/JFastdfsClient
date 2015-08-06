@@ -1,17 +1,17 @@
 package com.eiviv.fdfs.cmd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 
 public class ActiveTestCmd extends AbstractCmd<Boolean> {
 	
 	@Override
-	protected RequestBody getRequestBody() {
-		return new RequestBody(Context.FDFS_PROTO_CMD_ACTIVE_TEST);
+	protected RequestContext getRequestContext() {
+		return new RequestContext(Context.FDFS_PROTO_CMD_ACTIVE_TEST);
 	}
 	
 	@Override
@@ -20,17 +20,12 @@ public class ActiveTestCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected byte getResponseCmdCode() {
-		return Context.STORAGE_PROTO_CMD_RESP;
-	}
-	
-	@Override
-	protected long getFixedBodyLength() {
+	protected long getLongOfFixedResponseEntity() {
 		return 0;
 	}
 	
 	@Override
-	protected Result<Boolean> callback(com.eiviv.fdfs.cmd.AbstractCmd.Response response) throws IOException {
-		return new Result<Boolean>(response.getCode(), response.isSuccess());
+	protected Result<Boolean> callback(ResponseContext responseContext) throws FastdfsClientException {
+		return new Result<Boolean>(responseContext.getCode(), responseContext.isSuccess());
 	}
 }

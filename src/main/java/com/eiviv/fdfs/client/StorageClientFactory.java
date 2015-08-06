@@ -7,6 +7,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import com.eiviv.fdfs.config.FastdfsClientConfig;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 
 public class StorageClientFactory implements KeyedPooledObjectFactory<String, StorageClient> {
 	
@@ -37,7 +38,11 @@ public class StorageClientFactory implements KeyedPooledObjectFactory<String, St
 	@Override
 	public void destroyObject(String key, PooledObject<StorageClient> pooledStorageClient) throws IOException {
 		StorageClient storageClient = pooledStorageClient.getObject();
-		storageClient.close();
+		try {
+			storageClient.close();
+		} catch (FastdfsClientException e) {
+			throw new IOException(e);
+		}
 	}
 	
 	@Override
