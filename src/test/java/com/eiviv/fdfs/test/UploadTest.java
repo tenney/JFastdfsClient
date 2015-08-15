@@ -33,7 +33,7 @@ public class UploadTest {
 				i++;
 				
 				try {
-					String fileId = fastdfsClient.upload(file);
+					String fileId = fastdfsClient.upload("group", file);
 					
 					System.out.println(Thread.currentThread().getName() + " - " + i + " upload file, resv fileId" + fileId);
 				} catch (Exception e) {

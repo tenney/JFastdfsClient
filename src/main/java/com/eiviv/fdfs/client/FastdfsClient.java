@@ -83,7 +83,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @return fileId
 	 * @throws Exception
 	 */
-	public String upload(InputStream inputStream, long size, String extName, HashMap<String, String> meta) throws Exception {
+	public String upload(String group, InputStream inputStream, long size, String extName, HashMap<String, String> meta) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		StorageClient storageClient = null;
@@ -92,7 +92,7 @@ public class FastdfsClient extends AbstractClient {
 		
 		try {
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
-			Result<UploadStorage> result = trackerClient.getUploadStorage();
+			Result<UploadStorage> result = trackerClient.getUploadStorage(group);
 			
 			if (result.getCode() != Context.SUCCESS_CODE) {
 				return fileId;
@@ -135,8 +135,8 @@ public class FastdfsClient extends AbstractClient {
 	 * @return fileId "group/remoteFileName"
 	 * @throws Exception
 	 */
-	public String upload(File file, String extName, HashMap<String, String> meta) throws Exception {
-		return upload(new FileInputStream(file), file.length(), extName, meta);
+	public String upload(String group, File file, String extName, HashMap<String, String> meta) throws Exception {
+		return upload(group, new FileInputStream(file), file.length(), extName, meta);
 	}
 	
 	/**
@@ -147,8 +147,8 @@ public class FastdfsClient extends AbstractClient {
 	 * @return
 	 * @throws Exception
 	 */
-	public String upload(File file, String extName) throws Exception {
-		return upload(file, extName, null);
+	public String upload(String group, File file, String extName) throws Exception {
+		return upload(group, file, extName, null);
 	}
 	
 	/**
@@ -158,8 +158,8 @@ public class FastdfsClient extends AbstractClient {
 	 * @return
 	 * @throws Exception
 	 */
-	public String upload(File file) throws Exception {
-		return upload(file, getFileExtName(file));
+	public String upload(String group, File file) throws Exception {
+		return upload(group, file, getFileExtName(file));
 	}
 	
 	/**

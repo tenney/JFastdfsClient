@@ -36,6 +36,8 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 		if (group == null || group.trim() == "") {
 			return new RequestContext(requestCmdCode);
 		}
+		//重新设置命令类型
+		requestCmdCode = Context.TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITH_GROUP_ONE;
 		
 		byte[] bs = group.getBytes(Context.CHARSET);
 		byte[] params = new byte[Context.FDFS_GROUP_NAME_MAX_LEN];

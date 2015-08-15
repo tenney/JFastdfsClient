@@ -1,7 +1,6 @@
 package com.eiviv.fdfs.test;
 
 import java.io.File;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,12 +14,12 @@ public class UpdateTest {
 	@Test
 	public void testUploadMeta() throws Exception {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
-		URL fileUrl = this.getClass().getResource("/Koala.jpg");
-		File file = new File(fileUrl.getPath());
+//		URL fileUrl = this.getClass().getResource("/Koala.jpg");
+		File file = new File("/Users/tenney/Desktop/aa.jpg");
 		HashMap<String, String> meta = new HashMap<String, String>();
 		meta.put("size", "200x200");
 		
-		String fileId = fastdfsClient.upload(file, null, meta);
+		String fileId = fastdfsClient.upload("group1", file, "jpg", meta);
 		System.out.println("fileId:" + fileId);
 		
 		meta.put("size", "300x300");

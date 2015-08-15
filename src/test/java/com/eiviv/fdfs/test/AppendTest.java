@@ -16,7 +16,7 @@ public class AppendTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Test.txt");
 		File file = new File(fileUrl.getPath());
-		String fileId = fastdfsClient.upload(file);
+		String fileId = fastdfsClient.upload("group1", file);
 		System.out.println("fileId:" + fileId);
 		
 		byte[] tb = "ABCD".getBytes(Context.CHARSET);

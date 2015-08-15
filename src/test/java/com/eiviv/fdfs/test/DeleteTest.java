@@ -15,7 +15,7 @@ public class DeleteTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Koala.jpg");
 		File file = new File(fileUrl.getPath());
-		String fileId = fastdfsClient.upload(file);
+		String fileId = fastdfsClient.upload("group1",file);
 		System.out.println("fileId:" + fileId);
 		
 		Boolean flag = fastdfsClient.delete(fileId);

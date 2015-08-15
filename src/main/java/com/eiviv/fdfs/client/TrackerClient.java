@@ -67,6 +67,18 @@ public class TrackerClient extends AbstractClient {
 	}
 	
 	/**
+	 * 获取上传 storage
+	 * 
+	 * @return
+	 * @throws FastdfsClientException
+	 */
+	public Result<UploadStorage> getUploadStorage(String group) throws FastdfsClientException {
+	    Cmd<UploadStorage> command = new QueryUploadCmd(group);
+	    
+	    return command.exec(getSocket());
+	}
+	
+	/**
 	 * 获取更新 storage 地址
 	 * 
 	 * @param group 组名
