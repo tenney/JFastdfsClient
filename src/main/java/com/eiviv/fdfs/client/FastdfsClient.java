@@ -3,19 +3,23 @@ package com.eiviv.fdfs.client;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.FileInfo;
 import com.eiviv.fdfs.model.GroupInfo;
 import com.eiviv.fdfs.model.Result;
@@ -28,6 +32,7 @@ public class FastdfsClient extends AbstractClient {
 	private GenericKeyedObjectPool<String, StorageClient> storageClientPool;
 	private List<String> trackerAddrs = new ArrayList<String>();
 	private Map<String, String> storageIpMap = new ConcurrentHashMap<String, String>();
+	private int trackerIndex = 0;
 	
 	private static final class FastDfsFile {
 		private String group;
@@ -524,18 +529,21 @@ public class FastdfsClient extends AbstractClient {
 			}
 			
 			ArrayList<GroupInfo> groupInfos = result.getData();
+			Result<ArrayList<StorageInfo>> storageInfoResult = null;
+			ArrayList<StorageInfo> storageInfos = null;
+			String hostPort = null;
 			
 			for (GroupInfo groupInfo : groupInfos) {
-				Result<ArrayList<StorageInfo>> storageInfoResult = trackerClient.getStorageInfos(groupInfo.getGroupName());
+				storageInfoResult = trackerClient.getStorageInfos(groupInfo.getGroupName());
 				
 				if (storageInfoResult.getCode() != 0) {
 					continue;
 				}
 				
-				ArrayList<StorageInfo> storageInfos = storageInfoResult.getData();
+				storageInfos = storageInfoResult.getData();
 				
 				for (StorageInfo storageInfo : storageInfos) {
-					String hostPort = storageInfo.getDomainName();
+					hostPort = storageInfo.getDomainName();
 					
 					if (storageInfo.getStorageHttpPort() != 80) {
 						hostPort = hostPort + ":" + storageInfo.getStorageHttpPort();
@@ -595,16 +603,71 @@ public class FastdfsClient extends AbstractClient {
 		return t;
 	}
 	
+	private boolean testConn(String trackerAddr) {
+		String[] hostport = trackerAddr.split(":");
+		String host = hostport[0];
+		Integer port = Integer.valueOf(hostport[1]);
+		
+		Socket socket = new Socket();
+		
+		try {
+			socket.setSoTimeout(10000);
+			socket.connect(new InetSocketAddress(host, port), 10000);
+			return true;
+		} catch (SocketException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		} finally {
+			try {
+				socket.close();
+			} catch (IOException e) {
+			} finally {
+				socket = null;
+			}
+		}
+	}
+	
 	/**
-	 * 获取随机 tracker server 链接地址
+	 * 获取 tracker server 链接地址
 	 * 
 	 * @return
 	 */
-	private String getTrackerAddr() {
-		Random r = new Random();
-		int i = r.nextInt(trackerAddrs.size());
+	private String getTrackerAddr() throws Exception {
+		int currIdx;
 		
-		return trackerAddrs.get(i);
+		synchronized (FastdfsClient.class) {
+			
+			if (trackerIndex >= trackerAddrs.size()) {
+				trackerIndex = 0;
+			}
+			
+			currIdx = trackerIndex;
+		}
+		
+		if (testConn(trackerAddrs.get(currIdx))) {
+			return trackerAddrs.get(currIdx);
+		}
+		
+		for (int i = 0; i < trackerAddrs.size(); i++) {
+			
+			if (currIdx == i) {
+				continue;
+			}
+			
+			if (testConn(trackerAddrs.get(i))) {
+				
+				synchronized (FastdfsClient.class) {
+					if (currIdx == trackerIndex) {
+						trackerIndex = i;
+					}
+				}
+				
+				return trackerAddrs.get(i);
+			}
+		}
+		
+		throw new FastdfsClientException("can not connect all tracker server");
 	}
 	
 	/**

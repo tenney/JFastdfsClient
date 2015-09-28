@@ -11,7 +11,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.HashMap;
 
-import com.eiviv.fdfs.cmd.ActiveTestCmd;
 import com.eiviv.fdfs.cmd.AppendCmd;
 import com.eiviv.fdfs.cmd.CloseCmd;
 import com.eiviv.fdfs.cmd.Cmd;
@@ -278,35 +277,6 @@ public class StorageClient extends AbstractClient {
 		Cmd<FileInfo> cmd = new QueryFileInfoCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
-	}
-	
-	/**
-	 * 判断socket是否已经关闭
-	 * 
-	 * @return
-	 */
-	public boolean isClosed() {
-		
-		if (this.socket == null) {
-			return true;
-		}
-		
-		if (this.socket.isClosed()) {
-			return true;
-		}
-		
-		ActiveTestCmd atcmd = new ActiveTestCmd();
-		
-		try {
-			Result<Boolean> result = atcmd.exec(getSocket());
-			
-			if (result.getData()) {
-				return false;
-			}
-		} catch (FastdfsClientException e) {
-		}
-		
-		return true;
 	}
 	
 	/**
