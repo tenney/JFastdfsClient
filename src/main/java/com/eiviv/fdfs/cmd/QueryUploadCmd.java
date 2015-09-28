@@ -69,7 +69,7 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 	protected Result<UploadStorage> callback(ResponseContext responseContext) throws FastdfsClientException {
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<UploadStorage>(responseContext.getCode(), "Error");
+			return new Result<UploadStorage>(responseContext.getCode(), "Query Error");
 		}
 		
 		byte[] data = responseContext.getData();

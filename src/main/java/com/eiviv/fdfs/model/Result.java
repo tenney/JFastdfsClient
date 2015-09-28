@@ -2,6 +2,8 @@ package com.eiviv.fdfs.model;
 
 import java.io.Serializable;
 
+import com.eiviv.fdfs.context.Context;
+
 public class Result<T extends Serializable> {
 	
 	private int code;
@@ -20,6 +22,10 @@ public class Result<T extends Serializable> {
 	public Result(int code, T data) {
 		this.code = code;
 		this.data = data;
+	}
+	
+	public boolean isSuccess() {
+		return this.code == Context.SUCCESS_CODE;
 	}
 	
 	public int getCode() {

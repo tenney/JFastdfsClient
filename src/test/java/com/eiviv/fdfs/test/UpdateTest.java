@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
+import com.eiviv.fdfs.model.Result;
 
 public class UpdateTest {
 	
@@ -20,16 +21,29 @@ public class UpdateTest {
 		HashMap<String, String> meta = new HashMap<String, String>();
 		meta.put("size", "200x200");
 		
-		String fileId = fastdfsClient.upload(file, null, meta);
+		Result<String> uploadResult = fastdfsClient.upload(file, null, meta);
+		
+		if (!uploadResult.isSuccess()) {
+			System.out.println(uploadResult.getMessage());
+			return;
+		}
+		
+		String fileId = uploadResult.getData();
+		
 		System.out.println("fileId:" + fileId);
 		
 		meta.put("size", "300x300");
 		meta.put("nickname", "nickname");
 		fastdfsClient.setMeta(fileId, meta);
 		
-		Map<String, String> a = fastdfsClient.getMeta(fileId);
+		Result<HashMap<String, String>> metaInfoResult = fastdfsClient.getMeta(fileId);
 		
-		for (Map.Entry<String, String> entry : a.entrySet()) {
+		if (!metaInfoResult.isSuccess()) {
+			System.out.println(metaInfoResult.getMessage());
+			return;
+		}
+		
+		for (Map.Entry<String, String> entry : metaInfoResult.getData().entrySet()) {
 			System.out.println(entry.getKey() + ":" + entry.getValue());
 		}
 		

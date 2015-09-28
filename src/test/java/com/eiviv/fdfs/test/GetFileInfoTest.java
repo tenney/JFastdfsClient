@@ -5,6 +5,7 @@ import org.junit.Test;
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
 import com.eiviv.fdfs.model.FileInfo;
+import com.eiviv.fdfs.model.Result;
 
 public class GetFileInfoTest {
 	
@@ -14,8 +15,13 @@ public class GetFileInfoTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		
 		try {
-			FileInfo fileInfo = fastdfsClient.getFileInfo(fileId);
-			System.out.println(fileInfo.getFileSize());
+			Result<FileInfo> result = fastdfsClient.getFileInfo(fileId);
+			
+			if (!result.isSuccess()) {
+				System.out.println(result.getMessage());
+			} else {
+				System.out.println(result.getData().getFileSize());
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

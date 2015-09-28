@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
+import com.eiviv.fdfs.model.Result;
 
 public class UploadSlaveTest {
 	
@@ -15,11 +16,26 @@ public class UploadSlaveTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Koala.jpg");
 		File file = new File(fileUrl.getPath());
-		String fileId = fastdfsClient.upload(file);
+		Result<String> uploadResult = fastdfsClient.upload(file);
+		
+		if (!uploadResult.isSuccess()) {
+			System.out.println(uploadResult.getMessage());
+			return;
+		}
+		
+		String fileId = uploadResult.getData();
+		
 		System.out.println("fileId:" + fileId);
 		
-		String result = fastdfsClient.uploadSlave(file, fileId, "_200x200", "jpg");
-		System.out.println(result);
+		Result<String> uploadSlaveResult = fastdfsClient.uploadSlave(file, fileId, "_200x200", "jpg");
+		
+		if (!uploadSlaveResult.isSuccess()) {
+			System.out.println(uploadSlaveResult.getMessage());
+			return;
+		}
+		
+		System.out.println(uploadSlaveResult.getData());
+		
 		fastdfsClient.close();
 	}
 	

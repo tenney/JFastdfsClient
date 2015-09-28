@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
+import com.eiviv.fdfs.model.Result;
 
 public class DownloadTest {
 	
@@ -18,9 +19,9 @@ public class DownloadTest {
 		
 		try {
 			FileOutputStream os = new FileOutputStream(file);
-			boolean flag = fastdfsClient.download(fileId, os);
+			Result<Boolean> downloadResult = fastdfsClient.download(fileId, os);
 			
-			System.out.println(flag);
+			System.out.println(downloadResult.getData());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

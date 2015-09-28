@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
+import com.eiviv.fdfs.model.Result;
 
 public class UploadTest {
 	
@@ -33,15 +34,18 @@ public class UploadTest {
 				i++;
 				
 				try {
-					String fileId = fastdfsClient.upload(file);
+					Result<String> uploadResult = fastdfsClient.upload(file);
 					
-					System.out.println(Thread.currentThread().getName() + " - " + i + " upload file, resv fileId" + fileId);
+					if (!uploadResult.isSuccess()) {
+						System.out.println(uploadResult.getMessage());
+						break;
+					}
+					
+					System.out.println(Thread.currentThread().getName() + " - " + i + " upload file, resv fileId" + uploadResult.getData());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				
 			}
-			
 		}
 	}
 	

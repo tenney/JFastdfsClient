@@ -21,43 +21,54 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	 * @param socket
 	 * @throws Exception
 	 */
-	public final void request(Socket socket) throws Exception {
-		OutputStream sockectOutputStream = socket.getOutputStream();
-		RequestContext reqCon = getRequestContext();
+	public final void request(Socket socket) throws FastdfsClientException {
 		
-		if (reqCon == null) {
-			throw new IllegalArgumentException("request context can not be null");
-		}
-		
-		byte[] params = reqCon.getRequestParams();
-		
-		if (params == null) {
-			params = new byte[0];
-		}
-		
-		byte[] reqEntity = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2 + params.length];
-		
-		Arrays.fill(reqEntity, (byte) 0);
-		
-		InputStream inputStream = reqCon.getInputStream();
-		byte[] multipartByte = reqCon.getMultipartByte();
-		byte[] reqConLenByte = null;
-		
-		if (inputStream != null || multipartByte != null) {
-			reqConLenByte = ByteUtils.long2bytes(params.length + reqCon.getMultipartSize());
-		} else {
-			reqConLenByte = ByteUtils.long2bytes(params.length);
-		}
-		
-		System.arraycopy(reqConLenByte, 0, reqEntity, 0, reqConLenByte.length);
-		System.arraycopy(params, 0, reqEntity, Context.FDFS_PROTO_PKG_LEN_SIZE + 2, params.length);
-		
-		reqEntity[Context.PROTO_HEADER_CMD_INDEX] = reqCon.getRequestCmdCode();
-		reqEntity[Context.PROTO_HEADER_STATUS_INDEX] = (byte) 0;
-		
-		sockectOutputStream.write(reqEntity);
-		
-		if (inputStream != null) {
+		try {
+			OutputStream sockectOutputStream = socket.getOutputStream();
+			
+			RequestContext reqCon = getRequestContext();
+			
+			if (reqCon == null) {
+				throw new IllegalArgumentException("request context can not be null");
+			}
+			
+			byte[] params = reqCon.getRequestParams();
+			
+			if (params == null) {
+				params = new byte[0];
+			}
+			
+			byte[] reqEntity = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2 + params.length];
+			
+			Arrays.fill(reqEntity, (byte) 0);
+			
+			InputStream inputStream = reqCon.getInputStream();
+			byte[] multipartByte = reqCon.getMultipartByte();
+			byte[] reqConLenByte = null;
+			
+			if (inputStream != null || multipartByte != null) {
+				reqConLenByte = ByteUtils.long2bytes(params.length + reqCon.getMultipartSize());
+			} else {
+				reqConLenByte = ByteUtils.long2bytes(params.length);
+			}
+			
+			System.arraycopy(reqConLenByte, 0, reqEntity, 0, reqConLenByte.length);
+			System.arraycopy(params, 0, reqEntity, Context.FDFS_PROTO_PKG_LEN_SIZE + 2, params.length);
+			
+			reqEntity[Context.PROTO_HEADER_CMD_INDEX] = reqCon.getRequestCmdCode();
+			reqEntity[Context.PROTO_HEADER_STATUS_INDEX] = (byte) 0;
+			
+			sockectOutputStream.write(reqEntity);
+			
+			if (multipartByte != null) {
+				sockectOutputStream.write(multipartByte, 0, multipartByte.length);
+				return;
+			}
+			
+			if (inputStream == null) {
+				return;
+			}
+			
 			byte[] readBuff = new byte[256 * 1024];
 			int readLen = 0;
 			
@@ -65,21 +76,21 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 				while ((readLen = inputStream.read(readBuff)) != -1) {
 					sockectOutputStream.write(readBuff, 0, readLen);
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
 				throw e;
 			} finally {
 				if (inputStream != null) {
 					try {
 						inputStream.close();
-					} catch (IOException e) {
+					} catch (Exception e) {
 						throw e;
 					} finally {
 						inputStream = null;
 					}
 				}
 			}
-		} else if (multipartByte != null) {
-			sockectOutputStream.write(multipartByte, 0, multipartByte.length);
+		} catch (Exception e) {
+			throw new FastdfsClientException(e);
 		}
 	}
 	

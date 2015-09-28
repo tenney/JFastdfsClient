@@ -68,7 +68,7 @@ public class UploadCmd extends AbstractCmd<String> {
 		Result<String> result = new Result<String>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			result.setMessage("Error");
+			result.setMessage("Upload Error");
 			return result;
 		}
 		
