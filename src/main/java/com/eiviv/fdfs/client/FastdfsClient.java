@@ -373,20 +373,24 @@ public class FastdfsClient extends AbstractClient {
 	 * @return result
 	 * @throws Exception
 	 */
-	public String getDownloadUrl(String fileId) throws Exception {
+	public Result<String> getDownloadUrl(String fileId) throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
-		String url = null;
+		Result<String> result = null;
 		
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
-			Result<String> result = trackerClient.getDownloadStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
+			result = trackerClient.getDownloadStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
 			
-			if (result.isSuccess()) {
-				String hostPort = getDownloadHostPort(result.getData());
-				url = "http://" + hostPort + "/" + fastDfsFile.fileName;
+			if (!result.isSuccess()) {
+				return result;
 			}
+			
+			String hostPort = getDownloadHostPort(result.getData());
+			String url = "http://" + hostPort + "/" + fastDfsFile.fileName;
+			
+			result.setData(url);
 		} catch (Exception e) {
 			throw e;
 		} finally {
@@ -395,7 +399,7 @@ public class FastdfsClient extends AbstractClient {
 			}
 		}
 		
-		return url;
+		return result;
 	}
 	
 	/**
@@ -498,7 +502,7 @@ public class FastdfsClient extends AbstractClient {
 			Result<ArrayList<GroupInfo>> result = trackerClient.getGroupInfos();
 			
 			if (!result.isSuccess()) {
-				throw new Exception("Get getGroupInfos Error");
+				throw new Exception("get groupinfos error");
 			}
 			
 			ArrayList<GroupInfo> groupInfos = result.getData();
