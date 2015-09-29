@@ -18,7 +18,7 @@ public class GetFileInfoTest {
 			Result<FileInfo> result = fastdfsClient.getFileInfo(fileId);
 			
 			if (!result.isSuccess()) {
-				System.out.println(result.getMessage());
+				System.out.println(result.getState());
 			} else {
 				System.out.println(result.getData().getFileSize());
 			}

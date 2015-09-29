@@ -67,9 +67,10 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 	
 	@Override
 	protected Result<UploadStorage> callback(ResponseContext responseContext) throws FastdfsClientException {
+		Result<UploadStorage> result = new Result<UploadStorage>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<UploadStorage>(responseContext.getCode(), "Query Error");
+			return result;
 		}
 		
 		byte[] data = responseContext.getData();
@@ -78,7 +79,9 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 		byte storePath = data[Context.TRACKER_QUERY_STORAGE_STORE_BODY_LEN - 1];
 		UploadStorage uploadStorage = new UploadStorage(ip_addr + ":" + String.valueOf(port), storePath);
 		
-		return new Result<UploadStorage>(responseContext.getCode(), uploadStorage);
+		result.setData(uploadStorage);
+		
+		return result;
 	}
 	
 }

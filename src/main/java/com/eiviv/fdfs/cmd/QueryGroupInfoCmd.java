@@ -28,9 +28,10 @@ public class QueryGroupInfoCmd extends AbstractCmd<ArrayList<GroupInfo>> {
 	
 	@Override
 	protected Result<ArrayList<GroupInfo>> callback(ResponseContext responseContext) throws FastdfsClientException {
+		Result<ArrayList<GroupInfo>> result = new Result<ArrayList<GroupInfo>>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<ArrayList<GroupInfo>>(responseContext.getCode(), "Error");
+			return result;
 		}
 		
 		byte[] data = responseContext.getData();
@@ -49,7 +50,9 @@ public class QueryGroupInfoCmd extends AbstractCmd<ArrayList<GroupInfo>> {
 			offset += GroupInfo.BYTE_SIZE;
 		}
 		
-		return new Result<ArrayList<GroupInfo>>(responseContext.getCode(), groupInfos);
+		result.setData(groupInfos);
+		
+		return result;
 	}
 	
 }

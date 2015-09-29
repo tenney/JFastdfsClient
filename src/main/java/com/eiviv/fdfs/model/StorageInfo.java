@@ -12,6 +12,7 @@ public class StorageInfo implements Serializable {
 	public final static int BYTE_SIZE = 612;
 	
 	protected byte status;
+	protected String state;
 	protected String id;
 	protected String ipAddr;
 	protected String domainName; // http domain name
@@ -194,6 +195,8 @@ public class StorageInfo implements Serializable {
 		this.lastHeartBeatTime = new Date(ByteUtils.bytes2long(data, offset) * 1000);
 		
 		this.ifTrunkServer = (data[offset] != 0);
+		
+		this.setState(status);
 	}
 	
 	public byte getStatus() {
@@ -202,6 +205,48 @@ public class StorageInfo implements Serializable {
 	
 	public void setStatus(byte status) {
 		this.status = status;
+	}
+	
+	public String getState() {
+		return state;
+	}
+	
+	public void setState(byte status) {
+		String state = "";
+		
+		switch (status) {
+		case Context.FDFS_STORAGE_STATUS_INIT:
+			state = "初始化 ，尚未得到同步已有数据的 ，尚未得到同步已有数据的 源服务器";
+			break;
+		case Context.FDFS_STORAGE_STATUS_WAIT_SYNC:
+			state = "等待 同步，已 得到 同步已有数据的源服务器";
+			break;
+		case Context.FDFS_STORAGE_STATUS_SYNCING:
+			state = "同步中 ";
+			break;
+		case Context.FDFS_STORAGE_STATUS_IP_CHANGED:
+			state = "IP发生变化";
+			break;
+		case Context.FDFS_STORAGE_STATUS_DELETED:
+			state = "已删除 已删除 ，该服务器从本组 ，该服务器从本组 中";
+			break;
+		case Context.FDFS_STORAGE_STATUS_OFFLINE:
+			state = "离线";
+			break;
+		case Context.FDFS_STORAGE_STATUS_ONLINE:
+			state = "在线,尚不能提供服务";
+			break;
+		case Context.FDFS_STORAGE_STATUS_ACTIVE:
+			state = "在线,可以提供服务";
+			break;
+		case Context.FDFS_STORAGE_STATUS_NONE:
+			state = "未知状态";
+			break;
+		default:
+			break;
+		}
+		
+		this.state = state;
 	}
 	
 	public String getId() {

@@ -100,8 +100,6 @@ public class FastdfsClient extends AbstractClient {
 			
 			if (!result.isSuccess()) {
 				uploadResult = new Result<String>(result.getCode());
-				uploadResult.setMessage("get upload storage faild");
-				
 				return uploadResult;
 			}
 			
@@ -558,8 +556,6 @@ public class FastdfsClient extends AbstractClient {
 			
 			if (!updateStorageResult.isSuccess()) {
 				execResult = new Result<T>(updateStorageResult.getCode());
-				execResult.setMessage("get update strorage address faild");
-				
 				return execResult;
 			}
 			

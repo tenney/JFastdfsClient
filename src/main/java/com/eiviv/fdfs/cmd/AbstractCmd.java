@@ -19,7 +19,7 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	 * socket write
 	 * 
 	 * @param socket
-	 * @throws Exception
+	 * @throws FastdfsClientException
 	 */
 	public final void request(Socket socket) throws FastdfsClientException {
 		
@@ -94,15 +94,14 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 		}
 	}
 	
-	@Override
-	public final Result<T> exec(Socket socket) throws FastdfsClientException {
-		
-		try {
-			request(socket);
-		} catch (Exception e) {
-			throw new FastdfsClientException(e);
-		}
-		
+	/**
+	 * socket read
+	 * 
+	 * @param socket
+	 * @return result
+	 * @throws FastdfsClientException
+	 */
+	public final Result<T> receive(Socket socket) throws FastdfsClientException {
 		OutputStream writer = getOutputStream();
 		
 		if (writer == null) {
@@ -186,6 +185,12 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 				}
 			}
 		}
+	}
+	
+	@Override
+	public final Result<T> exec(Socket socket) throws FastdfsClientException {
+		request(socket);
+		return receive(socket);
 	}
 	
 	protected static final class RequestContext {

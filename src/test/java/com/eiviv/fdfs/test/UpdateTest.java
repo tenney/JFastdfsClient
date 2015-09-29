@@ -14,7 +14,7 @@ import com.eiviv.fdfs.model.Result;
 public class UpdateTest {
 	
 	@Test
-	public void testUploadMeta() throws Exception {
+	public void test() throws Exception {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Koala.jpg");
 		File file = new File(fileUrl.getPath());
@@ -24,7 +24,7 @@ public class UpdateTest {
 		Result<String> uploadResult = fastdfsClient.upload(file, null, meta);
 		
 		if (!uploadResult.isSuccess()) {
-			System.out.println(uploadResult.getMessage());
+			System.out.println(uploadResult.getState());
 			return;
 		}
 		
@@ -39,7 +39,7 @@ public class UpdateTest {
 		Result<HashMap<String, String>> metaInfoResult = fastdfsClient.getMeta(fileId);
 		
 		if (!metaInfoResult.isSuccess()) {
-			System.out.println(metaInfoResult.getMessage());
+			System.out.println(metaInfoResult.getState());
 			return;
 		}
 		

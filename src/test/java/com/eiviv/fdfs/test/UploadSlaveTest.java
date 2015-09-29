@@ -19,7 +19,7 @@ public class UploadSlaveTest {
 		Result<String> uploadResult = fastdfsClient.upload(file);
 		
 		if (!uploadResult.isSuccess()) {
-			System.out.println(uploadResult.getMessage());
+			System.out.println(uploadResult.getState());
 			return;
 		}
 		
@@ -30,7 +30,7 @@ public class UploadSlaveTest {
 		Result<String> uploadSlaveResult = fastdfsClient.uploadSlave(file, fileId, "_200x200", "jpg");
 		
 		if (!uploadSlaveResult.isSuccess()) {
-			System.out.println(uploadSlaveResult.getMessage());
+			System.out.println(uploadSlaveResult.getState());
 			return;
 		}
 		

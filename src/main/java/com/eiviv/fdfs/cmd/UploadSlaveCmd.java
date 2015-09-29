@@ -81,15 +81,16 @@ public class UploadSlaveCmd extends AbstractCmd<String> {
 		Result<String> result = new Result<String>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			result.setMessage("Upload Error");
 			return result;
 		}
 		
 		byte[] data = responseContext.getData();
 		String group = new String(data, 0, Context.FDFS_GROUP_NAME_MAX_LEN).trim();
 		String remoteFileName = new String(data, Context.FDFS_GROUP_NAME_MAX_LEN, data.length - Context.FDFS_GROUP_NAME_MAX_LEN);
+		
 		result.setData(group + "/" + remoteFileName);
 		
 		return result;
 	}
+	
 }

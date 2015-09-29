@@ -58,14 +58,15 @@ public class QueryUpdateCmd extends AbstractCmd<String> {
 	@Override
 	protected Result<String> callback(ResponseContext responseContext) throws FastdfsClientException {
 		Result<String> result = new Result<String>(responseContext.getCode());
-		String url = "";
 		
-		if (responseContext.isSuccess()) {
-			byte[] data = responseContext.getData();
-			String ip = new String(data, Context.FDFS_GROUP_NAME_MAX_LEN, Context.FDFS_IPADDR_SIZE - 1).trim();
-			int port = (int) ByteUtils.bytes2long(data, Context.FDFS_GROUP_NAME_MAX_LEN + Context.FDFS_IPADDR_SIZE - 1);
-			url = ip + ":" + String.valueOf(port);
+		if (!responseContext.isSuccess()) {
+			return result;
 		}
+		
+		byte[] data = responseContext.getData();
+		String ip = new String(data, Context.FDFS_GROUP_NAME_MAX_LEN, Context.FDFS_IPADDR_SIZE - 1).trim();
+		int port = (int) ByteUtils.bytes2long(data, Context.FDFS_GROUP_NAME_MAX_LEN + Context.FDFS_IPADDR_SIZE - 1);
+		String url = ip + ":" + String.valueOf(port);
 		
 		result.setData(url);
 		

@@ -79,9 +79,10 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 	
 	@Override
 	protected Result<ArrayList<StorageInfo>> callback(ResponseContext responseContext) throws FastdfsClientException {
+		Result<ArrayList<StorageInfo>> result = new Result<ArrayList<StorageInfo>>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<ArrayList<StorageInfo>>(responseContext.getCode(), "Error");
+			return result;
 		}
 		
 		byte[] data = responseContext.getData();
@@ -100,7 +101,9 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 			offset += StorageInfo.BYTE_SIZE;
 		}
 		
-		return new Result<ArrayList<StorageInfo>>(responseContext.getCode(), storageInfos);
+		result.setData(storageInfos);
+		
+		return result;
 	}
 	
 }

@@ -19,7 +19,7 @@ public class DeleteTest {
 		Result<String> uploadResult = fastdfsClient.upload(file);
 		
 		if (!uploadResult.isSuccess()) {
-			System.out.println(uploadResult.getMessage());
+			System.out.println(uploadResult.getState());
 			return;
 		}
 		
