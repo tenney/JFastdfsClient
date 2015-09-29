@@ -41,7 +41,7 @@ public class UploadTest {
 						break;
 					}
 					
-					System.out.println(Thread.currentThread().getName() + " - " + i + " upload file, resv fileId" + uploadResult.getData());
+					System.out.println(Thread.currentThread().getName() + " - " + i + " upload file, resv fileId-> " + uploadResult.getData());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
