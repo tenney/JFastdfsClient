@@ -11,7 +11,7 @@ public class GetFileInfoTest {
 	
 	@Test
 	public void test() {
-		String fileId = "group1/M00/00/0F/rBDLZFW_vNuARX-FAAvqH_kipG8429.jpg";
+		String fileId = "group1/M00/00/00/rBDLZFYWOtSAWybXAAvqH_kipG84617520";
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		
 		try {
@@ -20,7 +20,7 @@ public class GetFileInfoTest {
 			if (!result.isSuccess()) {
 				System.out.println(result.getState());
 			} else {
-				System.out.println(result.getData().getFileSize());
+				System.out.println(result.getData());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

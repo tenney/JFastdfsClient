@@ -44,7 +44,7 @@ public class Result<T extends Serializable> {
 			state = "成功";
 			break;
 		case Context.ERR_NO_ENOENT:
-			state = "storage服务尚未准备好,请检查网络是否异常或者是否正在重启storage服务等";
+			state = "未找到指定访问点";
 			break;
 		case Context.ERR_NO_EIO:
 			state = "IO异常";

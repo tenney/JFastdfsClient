@@ -200,6 +200,19 @@ public class FastdfsClient extends AbstractClient {
 	}
 	
 	/**
+	 * 上传文件副本
+	 * 
+	 * @param file 文件
+	 * @param metaFileId 原文件ID "group/remoteFileName"
+	 * @param prefix 副本文件名后缀
+	 * @return result
+	 * @throws Exception
+	 */
+	public Result<String> uploadSlave(final File file, String metaFileId, final String prefix) throws Exception {
+		return uploadSlave(file, metaFileId, prefix, getFileExtName(file));
+	}
+	
+	/**
 	 * 断点上传
 	 * 
 	 * @param fileId
@@ -652,7 +665,7 @@ public class FastdfsClient extends AbstractClient {
 			}
 		}
 		
-		throw new FastdfsClientException("can not connect all tracker server");
+		throw new FastdfsClientException("cannot access all tracker server " + trackerAddrs);
 	}
 	
 	/**
