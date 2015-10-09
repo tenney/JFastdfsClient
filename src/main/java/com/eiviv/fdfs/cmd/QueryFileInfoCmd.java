@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.FileInfo;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
@@ -57,7 +56,7 @@ public class QueryFileInfoCmd extends AbstractCmd<FileInfo> {
 	}
 	
 	@Override
-	protected Result<FileInfo> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<FileInfo> callback(ResponseContext responseContext) {
 		Result<FileInfo> result = new Result<FileInfo>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {

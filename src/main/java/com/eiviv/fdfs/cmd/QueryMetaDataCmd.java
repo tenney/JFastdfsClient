@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 
 public class QueryMetaDataCmd extends AbstractCmd<HashMap<String, String>> {
@@ -56,7 +55,7 @@ public class QueryMetaDataCmd extends AbstractCmd<HashMap<String, String>> {
 	}
 	
 	@Override
-	protected Result<HashMap<String, String>> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<HashMap<String, String>> callback(ResponseContext responseContext) {
 		Result<HashMap<String, String>> result = new Result<HashMap<String, String>>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {

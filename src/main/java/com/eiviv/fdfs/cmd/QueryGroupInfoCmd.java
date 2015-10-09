@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.GroupInfo;
 import com.eiviv.fdfs.model.Result;
 
@@ -27,7 +26,7 @@ public class QueryGroupInfoCmd extends AbstractCmd<ArrayList<GroupInfo>> {
 	}
 	
 	@Override
-	protected Result<ArrayList<GroupInfo>> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<ArrayList<GroupInfo>> callback(ResponseContext responseContext) {
 		Result<ArrayList<GroupInfo>> result = new Result<ArrayList<GroupInfo>>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
@@ -38,7 +37,8 @@ public class QueryGroupInfoCmd extends AbstractCmd<ArrayList<GroupInfo>> {
 		int dataLength = data.length;
 		
 		if (dataLength % GroupInfo.BYTE_SIZE != 0) {
-			throw new FastdfsClientException("recv body length: " + data.length + " is not correct");
+			result.setCode(Context.ERR_NO_ECORRECT);
+			return result;
 		}
 		
 		ArrayList<GroupInfo> groupInfos = new ArrayList<GroupInfo>();

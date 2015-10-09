@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.HashMap;
 
 import com.eiviv.fdfs.cmd.AppendCmd;
@@ -69,9 +68,10 @@ public class StorageClient extends AbstractClient {
 	 * @param extName 文件扩展名
 	 * @param storePathIndex 上传路径
 	 * @return fileId
+	 * @throws IOException
 	 * @throws FastdfsClientException
 	 */
-	public Result<String> upload(InputStream inputStream, long size, String extName, byte storePathIndex) throws FastdfsClientException {
+	public Result<String> upload(InputStream inputStream, long size, String extName, byte storePathIndex) throws IOException {
 		Cmd<String> cmd = new UploadCmd(inputStream, size, extName, storePathIndex);
 		
 		return cmd.exec(getSocket());
@@ -84,15 +84,12 @@ public class StorageClient extends AbstractClient {
 	 * @param extName 扩展名
 	 * @param storePathIndex 存储地址
 	 * @return fileId
+	 * @throws IOException
 	 * @throws FastdfsClientException
+	 * @throws FileNotFoundException
 	 */
-	public Result<String> upload(File file, String extName, byte storePathIndex) throws FastdfsClientException {
-		try {
-			InputStream inputStream = new FileInputStream(file);
-			return upload(inputStream, file.length(), extName, storePathIndex);
-		} catch (FileNotFoundException e) {
-			throw new FastdfsClientException(e);
-		}
+	public Result<String> upload(File file, String extName, byte storePathIndex) throws FileNotFoundException, IOException {
+		return upload(new FileInputStream(file), file.length(), extName, storePathIndex);
 	}
 	
 	/**
@@ -112,7 +109,7 @@ public class StorageClient extends AbstractClient {
 										String fileId,
 										String slavePrefix,
 										String extName,
-										HashMap<String, String> meta) throws FastdfsClientException {
+										HashMap<String, String> meta) throws IOException {
 		Cmd<String> cmd = new UploadSlaveCmd(inputStream, size, fileId, slavePrefix, extName);
 		
 		Result<String> result = cmd.exec(getSocket());
@@ -139,15 +136,11 @@ public class StorageClient extends AbstractClient {
 	 * @param ext 扩展名
 	 * @param meta 元信息
 	 * @return Result
-	 * @throws FastdfsClientException
+	 * @throws FileNotFoundException
+	 * @throws IOException
 	 */
-	public Result<String> uploadSlave(File file, String fileId, String slavePrefix, String extName, HashMap<String, String> meta) throws FastdfsClientException {
-		try {
-			InputStream inputStream = new FileInputStream(file);
-			return uploadSlave(inputStream, file.length(), fileId, slavePrefix, extName, meta);
-		} catch (FileNotFoundException e) {
-			throw new FastdfsClientException(e);
-		}
+	public Result<String> uploadSlave(File file, String fileId, String slavePrefix, String extName, HashMap<String, String> meta) throws FileNotFoundException, IOException {
+		return uploadSlave(new FileInputStream(file), file.length(), fileId, slavePrefix, extName, meta);
 	}
 	
 	/**
@@ -158,7 +151,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> append(String fileName, byte[] fileByte) throws FastdfsClientException {
+	public Result<Boolean> append(String fileName, byte[] fileByte) throws IOException {
 		Cmd<Boolean> cmd = new AppendCmd(fileName, fileByte);
 		
 		return cmd.exec(getSocket());
@@ -172,7 +165,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> delete(String group, String fileName) throws FastdfsClientException {
+	public Result<Boolean> delete(String group, String fileName) throws IOException {
 		Cmd<Boolean> cmd = new DeleteCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
@@ -187,7 +180,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> download(String group, String fileName, OutputStream os) throws FastdfsClientException {
+	public Result<Boolean> download(String group, String fileName, OutputStream os) throws IOException {
 		return download(group, fileName, os, 0);
 	}
 	
@@ -201,7 +194,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> download(String group, String fileName, OutputStream os, long offset) throws FastdfsClientException {
+	public Result<Boolean> download(String group, String fileName, OutputStream os, long offset) throws IOException {
 		return download(group, fileName, os, offset, 0);
 	}
 	
@@ -216,7 +209,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> download(String group, String fileName, OutputStream os, long offset, long size) throws FastdfsClientException {
+	public Result<Boolean> download(String group, String fileName, OutputStream os, long offset, long size) throws IOException {
 		Cmd<Boolean> cmd = new DownloadCmd(group, fileName, os, offset, size);
 		
 		return cmd.exec(getSocket());
@@ -230,7 +223,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> truncate(String fileName, long truncatedFileSize) throws FastdfsClientException {
+	public Result<Boolean> truncate(String fileName, long truncatedFileSize) throws IOException {
 		Cmd<Boolean> cmd = new TruncateFileCmd(fileName, truncatedFileSize);
 		
 		return cmd.exec(getSocket());
@@ -245,7 +238,7 @@ public class StorageClient extends AbstractClient {
 	 * @return boolean
 	 * @throws FastdfsClientException
 	 */
-	public Result<Boolean> setMeta(String group, String fileName, HashMap<String, String> meta) throws FastdfsClientException {
+	public Result<Boolean> setMeta(String group, String fileName, HashMap<String, String> meta) throws IOException {
 		Cmd<Boolean> cmd = new UpdateMetaDataCmd(group, fileName, meta);
 		
 		return cmd.exec(getSocket());
@@ -259,7 +252,7 @@ public class StorageClient extends AbstractClient {
 	 * @return HashMap 元信息
 	 * @throws FastdfsClientException
 	 */
-	public Result<HashMap<String, String>> getMeta(String group, String fileName) throws FastdfsClientException {
+	public Result<HashMap<String, String>> getMeta(String group, String fileName) throws IOException {
 		Cmd<HashMap<String, String>> cmd = new QueryMetaDataCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
@@ -273,7 +266,7 @@ public class StorageClient extends AbstractClient {
 	 * @return
 	 * @throws FastdfsClientException
 	 */
-	public Result<FileInfo> getFileInfo(String group, String fileName) throws FastdfsClientException {
+	public Result<FileInfo> getFileInfo(String group, String fileName) throws IOException {
 		Cmd<FileInfo> cmd = new QueryFileInfoCmd(group, fileName);
 		
 		return cmd.exec(getSocket());
@@ -284,15 +277,11 @@ public class StorageClient extends AbstractClient {
 	 * 
 	 * @throws FastdfsClientException
 	 */
-	public void close() throws FastdfsClientException {
+	public void close() throws IOException {
 		Socket socket = getSocket();
 		Cmd<Boolean> cmd = new CloseCmd();
 		cmd.exec(socket);
-		try {
-			socket.close();
-		} catch (IOException e) {
-			throw new FastdfsClientException(e);
-		}
+		socket.close();
 		socket = null;
 	}
 	
@@ -302,19 +291,12 @@ public class StorageClient extends AbstractClient {
 	 * @return
 	 * @throws FastdfsClientException
 	 */
-	private Socket getSocket() throws FastdfsClientException {
+	private Socket getSocket() throws IOException {
 		
 		if (socket == null) {
 			socket = new Socket();
-			
-			try {
-				socket.setSoTimeout(networkTimeout);
-				socket.connect(new InetSocketAddress(host, port), connectTimeout);
-			} catch (SocketException e) {
-				throw new FastdfsClientException(e);
-			} catch (IOException e) {
-				throw new FastdfsClientException(e);
-			}
+			socket.setSoTimeout(networkTimeout);
+			socket.connect(new InetSocketAddress(host, port), connectTimeout);
 		}
 		
 		return socket;

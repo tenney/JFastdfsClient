@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.model.StorageInfo;
 
@@ -78,7 +77,7 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 	}
 	
 	@Override
-	protected Result<ArrayList<StorageInfo>> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<ArrayList<StorageInfo>> callback(ResponseContext responseContext) {
 		Result<ArrayList<StorageInfo>> result = new Result<ArrayList<StorageInfo>>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
@@ -89,7 +88,8 @@ public class QueryStorageInfoCmd extends AbstractCmd<ArrayList<StorageInfo>> {
 		int dataLength = data.length;
 		
 		if (dataLength % StorageInfo.BYTE_SIZE != 0) {
-			throw new FastdfsClientException("recv body length: " + data.length + " is not correct");
+			result.setCode(Context.ERR_NO_ECORRECT);
+			return result;
 		}
 		
 		ArrayList<StorageInfo> storageInfos = new ArrayList<StorageInfo>();

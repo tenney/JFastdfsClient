@@ -3,7 +3,6 @@ package com.eiviv.fdfs.cmd;
 import java.io.OutputStream;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 
 public class CloseCmd extends AbstractCmd<Boolean> {
@@ -24,7 +23,7 @@ public class CloseCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected Result<Boolean> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<Boolean> callback(ResponseContext responseContext) {
 		return new Result<Boolean>(responseContext.getCode(), responseContext.isSuccess());
 	}
 	

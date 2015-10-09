@@ -92,41 +92,45 @@ public class FastdfsClient extends AbstractClient {
 		TrackerClient trackerClient = null;
 		StorageClient storageClient = null;
 		String storageAddr = null;
-		Result<String> uploadResult = null;
+		boolean success = true;
 		
 		try {
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
 			Result<UploadStorage> result = trackerClient.getUploadStorage();
 			
 			if (!result.isSuccess()) {
-				uploadResult = new Result<String>(result.getCode());
-				return uploadResult;
+				return new Result<String>(result.getCode());
 			}
 			
 			storageAddr = result.getData().getAddress();
 			storageClient = storageClientPool.borrowObject(storageAddr);
 			
-			uploadResult = storageClient.upload(inputStream, size, extName, result.getData().getPathIndex());
+			Result<String> uploadResult = storageClient.upload(inputStream, size, extName, result.getData().getPathIndex());
 			
-			if (!uploadResult.isSuccess()) {
-				return uploadResult;
-			}
-			
-			if (meta != null) {
+			if (uploadResult.isSuccess() && meta != null) {
 				setMeta(uploadResult.getData(), meta);
 			}
+			
+			return uploadResult;
 		} catch (Exception e) {
+			success = false;
 			throw e;
 		} finally {
 			if (storageClient != null) {
-				storageClientPool.returnObject(storageAddr, storageClient);
+				if (success) {
+					storageClientPool.returnObject(storageAddr, storageClient);
+				} else {
+					storageClientPool.invalidateObject(storageAddr, storageClient);
+				}
 			}
 			if (trackerClient != null) {
-				trackerClientPool.returnObject(trackerAddr, trackerClient);
+				if (success) {
+					trackerClientPool.returnObject(trackerAddr, trackerClient);
+				} else {
+					trackerClientPool.invalidateObject(trackerAddr, trackerClient);
+				}
 			}
 		}
-		
-		return uploadResult;
 	}
 	
 	/**
@@ -390,6 +394,7 @@ public class FastdfsClient extends AbstractClient {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		Result<String> result = null;
+		boolean success = true;
 		
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
@@ -404,15 +409,20 @@ public class FastdfsClient extends AbstractClient {
 			String url = "http://" + hostPort + "/" + fastDfsFile.fileName;
 			
 			result.setData(url);
+			
+			return result;
 		} catch (Exception e) {
+			success = false;
 			throw e;
 		} finally {
 			if (trackerClient != null) {
-				trackerClientPool.returnObject(trackerAddr, trackerClient);
+				if (success) {
+					trackerClientPool.returnObject(trackerAddr, trackerClient);
+				} else {
+					trackerClientPool.invalidateObject(trackerAddr, trackerClient);
+				}
 			}
 		}
-		
-		return result;
 	}
 	
 	/**
@@ -426,15 +436,21 @@ public class FastdfsClient extends AbstractClient {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		ArrayList<GroupInfo> groupInfos = null;
+		boolean success = true;
 		
 		try {
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
 			groupInfos = trackerClient.getGroupInfos().getData();
 		} catch (Exception e) {
+			success = false;
 			throw e;
 		} finally {
 			if (trackerClient != null) {
-				trackerClientPool.returnObject(trackerAddr, trackerClient);
+				if (success) {
+					trackerClientPool.returnObject(trackerAddr, trackerClient);
+				} else {
+					trackerClientPool.invalidateObject(trackerAddr, trackerClient);
+				}
 			}
 		}
 		
@@ -452,15 +468,21 @@ public class FastdfsClient extends AbstractClient {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
 		ArrayList<StorageInfo> storageInfos = null;
+		boolean success = true;
 		
 		try {
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
 			storageInfos = trackerClient.getStorageInfos(group).getData();
 		} catch (Exception e) {
+			success = false;
 			throw e;
 		} finally {
 			if (trackerClient != null) {
-				trackerClientPool.returnObject(trackerAddr, trackerClient);
+				if (success) {
+					trackerClientPool.returnObject(trackerAddr, trackerClient);
+				} else {
+					trackerClientPool.invalidateObject(trackerAddr, trackerClient);
+				}
 			}
 		}
 		
@@ -509,6 +531,7 @@ public class FastdfsClient extends AbstractClient {
 	private void updateStorageIpMap() throws Exception {
 		String trackerAddr = getTrackerAddr();
 		TrackerClient trackerClient = null;
+		boolean success = true;
 		
 		try {
 			trackerClient = trackerClientPool.borrowObject(trackerAddr);
@@ -543,10 +566,15 @@ public class FastdfsClient extends AbstractClient {
 				}
 			}
 		} catch (Exception e) {
+			success = false;
 			throw e;
 		} finally {
 			if (trackerClient != null) {
-				trackerClientPool.returnObject(trackerAddr, trackerClient);
+				if (success) {
+					trackerClientPool.returnObject(trackerAddr, trackerClient);
+				} else {
+					trackerClientPool.invalidateObject(trackerAddr, trackerClient);
+				}
 			}
 		}
 	}
@@ -564,7 +592,7 @@ public class FastdfsClient extends AbstractClient {
 		TrackerClient trackerClient = null;
 		StorageClient storageClient = null;
 		String storageAddr = null;
-		Result<T> execResult = null;
+		boolean success = true;
 		
 		try {
 			FastDfsFile fastDfsFile = new FastDfsFile(fileId);
@@ -572,26 +600,32 @@ public class FastdfsClient extends AbstractClient {
 			Result<String> updateStorageResult = trackerClient.getUpdateStorageAddr(fastDfsFile.group, fastDfsFile.fileName);
 			
 			if (!updateStorageResult.isSuccess()) {
-				execResult = new Result<T>(updateStorageResult.getCode());
-				return execResult;
+				return new Result<T>(updateStorageResult.getCode());
 			}
 			
 			storageAddr = updateStorageResult.getData();
 			storageClient = storageClientPool.borrowObject(storageAddr);
 			
-			execResult = executor.exec(storageClient, fastDfsFile);
+			return executor.exec(storageClient, fastDfsFile);
 		} catch (Exception e) {
+			success = false;
 			throw e;
 		} finally {
 			if (storageClient != null) {
-				storageClientPool.returnObject(storageAddr, storageClient);
+				if (success) {
+					storageClientPool.returnObject(storageAddr, storageClient);
+				} else {
+					storageClientPool.invalidateObject(storageAddr, storageClient);
+				}
 			}
 			if (trackerClient != null) {
-				trackerClientPool.returnObject(trackerAddr, trackerClient);
+				if (success) {
+					trackerClientPool.returnObject(trackerAddr, trackerClient);
+				} else {
+					trackerClientPool.invalidateObject(trackerAddr, trackerClient);
+				}
 			}
 		}
-		
-		return execResult;
 	}
 	
 	/**
@@ -631,10 +665,11 @@ public class FastdfsClient extends AbstractClient {
 	 * @return
 	 * @throws Exception
 	 */
-	private String getTrackerAddr() throws Exception {
+	private String getTrackerAddr() throws FastdfsClientException {
 		int currIdx;
 		
 		synchronized (FastdfsClient.class) {
+			trackerIndex += 1;
 			
 			if (trackerIndex >= trackerAddrs.size()) {
 				trackerIndex = 0;

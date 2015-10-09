@@ -64,7 +64,11 @@ public class Result<T extends Serializable> {
 		case Context.ERR_NO_EALREADY:
 			state = "已在运行中";
 			break;
+		case Context.ERR_NO_ECORRECT:
+			state = "不在预期结果范围内";
+			break;
 		default:
+			state = "未知错误";
 			break;
 		}
 		

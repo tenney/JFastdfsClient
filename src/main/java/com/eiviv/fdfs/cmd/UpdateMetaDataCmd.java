@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
 
@@ -74,7 +73,7 @@ public class UpdateMetaDataCmd extends AbstractCmd<Boolean> {
 	}
 	
 	@Override
-	protected Result<Boolean> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<Boolean> callback(ResponseContext responseContext) {
 		return new Result<Boolean>(responseContext.getCode(), responseContext.isSuccess());
 	}
 	
