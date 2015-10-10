@@ -648,7 +648,7 @@ public class FastdfsClient extends AbstractClient {
 	 * @param trackerAddr
 	 * @return
 	 */
-	private boolean validateConnection(String trackerAddr) {
+	private boolean isReachable(String trackerAddr) {
 		String[] hostport = trackerAddr.split(":");
 		String host = hostport[0];
 		Integer port = Integer.valueOf(hostport[1]);
@@ -692,7 +692,7 @@ public class FastdfsClient extends AbstractClient {
 			currIdx = trackerIndex;
 		}
 		
-		if (validateConnection(trackerAddrs.get(currIdx))) {
+		if (isReachable(trackerAddrs.get(currIdx))) {
 			return trackerAddrs.get(currIdx);
 		}
 		
@@ -702,7 +702,7 @@ public class FastdfsClient extends AbstractClient {
 				continue;
 			}
 			
-			if (validateConnection(trackerAddrs.get(i))) {
+			if (isReachable(trackerAddrs.get(i))) {
 				
 				synchronized (FastdfsClient.class) {
 					if (currIdx == trackerIndex) {
