@@ -250,7 +250,26 @@ public class FastdfsClient extends AbstractClient {
 	}
 	
 	/**
-	 * 断点下载
+	 * 下载到指定输出流(支持断点下载)
+	 * 
+	 * @param fileId "group/remoteFileName"
+	 * @param os OutputStream
+	 * @param offset 开始点
+	 * @param size 大小
+	 * @return
+	 * @throws Exception
+	 */
+	public Result<Boolean> download(String fileId, final OutputStream os, final long offset, final long size) throws Exception {
+		return fixedStorageExec(fileId, new StorageExecutor<Boolean>() {
+			@Override
+			public Result<Boolean> exec(StorageClient storageClient, FastDfsFile fastDfsFile) throws Exception {
+				return storageClient.download(fastDfsFile.group, fastDfsFile.fileName, os, offset, size);
+			}
+		});
+	}
+	
+	/**
+	 * 下载到指定输出流(支持断点下载)
 	 * 
 	 * @param fileId "group/remoteFileName"
 	 * @param os OutputStream
@@ -259,16 +278,11 @@ public class FastdfsClient extends AbstractClient {
 	 * @throws Exception
 	 */
 	public Result<Boolean> download(String fileId, final OutputStream os, final long offset) throws Exception {
-		return fixedStorageExec(fileId, new StorageExecutor<Boolean>() {
-			@Override
-			public Result<Boolean> exec(StorageClient storageClient, FastDfsFile fastDfsFile) throws Exception {
-				return storageClient.download(fastDfsFile.group, fastDfsFile.fileName, os, offset);
-			}
-		});
+		return download(fileId, os, offset, 0);
 	}
 	
 	/**
-	 * 下载文件
+	 * 下载到指定输出流
 	 * 
 	 * @param fileId "group/remoteFileName"
 	 * @param os OutputStream
@@ -280,7 +294,7 @@ public class FastdfsClient extends AbstractClient {
 	}
 	
 	/**
-	 * 断点下载文件
+	 * 下载到指定文件(支持断点下载)
 	 * 
 	 * @param fileId "group/remoteFileName"
 	 * @param localFile 本地文件
@@ -293,7 +307,7 @@ public class FastdfsClient extends AbstractClient {
 	}
 	
 	/**
-	 * 下载文件
+	 * 下载到指定文件
 	 * 
 	 * @param fileId "group/remoteFileName"
 	 * @param localFile 本地文件
@@ -305,20 +319,20 @@ public class FastdfsClient extends AbstractClient {
 	}
 	
 	/**
-	 * 断点下载文件
+	 * 下载到指定文件(支持断点下载)
 	 * 
 	 * @param fileId "group/remoteFileName"
-	 * @param localFileName 本地文件名
+	 * @param localFilePath 本地文件路径
 	 * @param offset 下载开始点
 	 * @return result
 	 * @throws Exception
 	 */
-	public Result<Boolean> download(String fileId, String localFileName, long offset) throws Exception {
-		return download(fileId, new File(localFileName), offset);
+	public Result<Boolean> download(String fileId, String localFilePath, long offset) throws Exception {
+		return download(fileId, new File(localFilePath), offset);
 	}
 	
 	/**
-	 * 剪裁文件
+	 * 截断文件内容
 	 * 
 	 * @param fileId
 	 * @param truncatedFileSize
