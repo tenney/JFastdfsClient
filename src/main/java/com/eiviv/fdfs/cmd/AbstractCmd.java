@@ -79,7 +79,6 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			try {
 				inputStream.close();
 			} catch (IOException e) {
-			} finally {
 				inputStream = null;
 			}
 		}
@@ -170,7 +169,6 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			try {
 				writer.close();
 			} catch (IOException e) {
-			} finally {
 				writer = null;
 			}
 		}
