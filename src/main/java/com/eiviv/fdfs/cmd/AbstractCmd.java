@@ -132,9 +132,13 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			throw new IOException("recv body length: " + resEntity2L + " is not correct, expect length: " + fixedResEntityLen);
 		}
 		
-		byte[] buff = new byte[2 * 1024];
 		int totalBytes = 0;
 		int remainBytes = (int) resEntity2L;
+		byte[] buff = new byte[remainBytes];
+		
+		if (Context.STORAGE_PROTO_CMD_DOWNLOAD_FILE == getRequestContext().getRequestCmdCode()) {
+			buff = new byte[256 * 1024];
+		}
 		
 		try {
 			while (totalBytes < resEntity2L) {
