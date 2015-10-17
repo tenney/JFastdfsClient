@@ -19,14 +19,14 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	 * socket write
 	 * 
 	 * @param socket
-	 * @throws Exception
+	 * @throws FastdfsClientException
 	 */
-	public final void request(Socket socket) throws Exception {
+	public final void request(Socket socket) throws IOException {
 		OutputStream sockectOutputStream = socket.getOutputStream();
 		RequestContext reqCon = getRequestContext();
 		
 		if (reqCon == null) {
-			throw new IllegalArgumentException("request context can not be null");
+			return;
 		}
 		
 		byte[] params = reqCon.getRequestParams();
@@ -57,87 +57,91 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 		
 		sockectOutputStream.write(reqEntity);
 		
-		if (inputStream != null) {
-			byte[] readBuff = new byte[256 * 1024];
-			int readLen = 0;
-			
-			try {
-				while ((readLen = inputStream.read(readBuff)) != -1) {
-					sockectOutputStream.write(readBuff, 0, readLen);
-				}
-			} catch (IOException e) {
-				throw e;
-			} finally {
-				if (inputStream != null) {
-					try {
-						inputStream.close();
-					} catch (IOException e) {
-						throw e;
-					} finally {
-						inputStream = null;
-					}
-				}
-			}
-		} else if (multipartByte != null) {
+		if (multipartByte != null) {
 			sockectOutputStream.write(multipartByte, 0, multipartByte.length);
+			return;
+		}
+		
+		if (inputStream == null) {
+			return;
+		}
+		
+		byte[] readBuff = new byte[256 * 1024];
+		int readLen = 0;
+		
+		try {
+			while ((readLen = inputStream.read(readBuff)) != -1) {
+				sockectOutputStream.write(readBuff, 0, readLen);
+			}
+		} catch (IOException e) {
+			throw e;
+		} finally {
+			try {
+				inputStream.close();
+			} catch (IOException e) {
+				inputStream = null;
+			}
 		}
 	}
 	
-	@Override
-	public final Result<T> exec(Socket socket) throws FastdfsClientException {
-		
-		try {
-			request(socket);
-		} catch (Exception e) {
-			throw new FastdfsClientException(e);
-		}
-		
+	/**
+	 * socket read
+	 * 
+	 * @param socket
+	 * @return result
+	 * @throws FastdfsClientException
+	 */
+	private Result<T> receive(Socket socket) throws IOException {
 		OutputStream writer = getOutputStream();
 		
 		if (writer == null) {
 			return callback(new ResponseContext(Context.SUCCESS_CODE));
 		}
 		
+		InputStream sockectInputStream = socket.getInputStream();
+		
 		byte[] resEntity = new byte[Context.FDFS_PROTO_PKG_LEN_SIZE + 2];
+		int resEntityLen = sockectInputStream.read(resEntity);
+		
+		if (resEntityLen != resEntity.length) {
+			throw new IOException("recv package size " + resEntityLen + " != " + resEntity.length);
+		}
+		
+		byte resCmdCode = Context.STORAGE_PROTO_CMD_RESP;
+		byte recvCmdCode = resEntity[Context.PROTO_HEADER_CMD_INDEX];
+		
+		if (recvCmdCode != resCmdCode) {
+			throw new IOException("recv cmd: " + recvCmdCode + " is not correct, expect cmd: " + resCmdCode);
+		}
+		
+		byte recvStatus = resEntity[Context.PROTO_HEADER_STATUS_INDEX];
+		
+		if (recvStatus != Context.SUCCESS_CODE) {
+			return callback(new ResponseContext(recvStatus));
+		}
+		
+		long resEntity2L = ByteUtils.bytes2long(resEntity, 0);
+		
+		if (resEntity2L < 0) {
+			throw new IOException("recv body length: " + resEntity2L + " < 0!");
+		}
+		
+		long fixedResEntityLen = getLongOfFixedResponseEntity();
+		
+		if (fixedResEntityLen >= 0 && resEntity2L != fixedResEntityLen) {
+			throw new IOException("recv body length: " + resEntity2L + " is not correct, expect length: " + fixedResEntityLen);
+		}
+		
+		int totalBytes = 0;
+		int remainBytes = (int) resEntity2L;
+		byte[] buff = new byte[remainBytes];
+		
+		if (Context.STORAGE_PROTO_CMD_DOWNLOAD_FILE == getRequestContext().getRequestCmdCode()) {
+			buff = new byte[256 * 1024];
+		}
 		
 		try {
-			InputStream sockectInputStream = socket.getInputStream();
-			int resEntityLen = sockectInputStream.read(resEntity);
-			
-			if (resEntityLen != resEntity.length) {
-				throw new FastdfsClientException("recv package size " + resEntityLen + " != " + resEntity.length);
-			}
-			
-			byte resCmdCode = Context.STORAGE_PROTO_CMD_RESP;
-			byte recvCmdCode = resEntity[Context.PROTO_HEADER_CMD_INDEX];
-			
-			if (recvCmdCode != resCmdCode) {
-				throw new FastdfsClientException("recv cmd: " + recvCmdCode + " is not correct, expect cmd: " + resCmdCode);
-			}
-			
-			byte recvStatus = resEntity[Context.PROTO_HEADER_STATUS_INDEX];
-			
-			if (recvStatus != Context.SUCCESS_CODE) {
-				return callback(new ResponseContext(recvStatus));
-			}
-			
-			long resEntityL = ByteUtils.bytes2long(resEntity, 0);
-			
-			if (resEntityL < 0) {
-				throw new FastdfsClientException("recv body length: " + resEntityL + " < 0!");
-			}
-			
-			long fixedResEntityL = getLongOfFixedResponseEntity();
-			
-			if (fixedResEntityL >= 0 && resEntityL != fixedResEntityL) {
-				throw new FastdfsClientException("recv body length: " + resEntityL + " is not correct, expect length: " + fixedResEntityL);
-			}
-			
-			byte[] buff = new byte[2 * 1024];
-			int totalBytes = 0;
-			int remainBytes = (int) resEntityL;
-			
-			while (totalBytes < resEntityL) {
+			while (totalBytes < resEntity2L) {
 				int len = remainBytes;
 				
 				if (len > buff.length) {
@@ -149,12 +153,13 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 				}
 				
 				writer.write(buff, 0, resEntityLen);
+				
 				totalBytes += resEntityLen;
 				remainBytes -= resEntityLen;
 			}
 			
-			if (totalBytes != resEntityL) {
-				throw new IOException("recv package size " + totalBytes + " != " + resEntityL);
+			if (totalBytes != resEntity2L) {
+				throw new IOException("recv package size " + totalBytes + " != " + resEntity2L);
 			}
 			
 			if (writer instanceof ByteArrayOutputStream) {
@@ -163,18 +168,20 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 			
 			return callback(new ResponseContext(Context.SUCCESS_CODE, null));
 		} catch (IOException e) {
-			throw new FastdfsClientException(e);
+			throw e;
 		} finally {
-			if (writer != null) {
-				try {
-					writer.close();
-				} catch (IOException e) {
-					throw new FastdfsClientException(e);
-				} finally {
-					writer = null;
-				}
+			try {
+				writer.close();
+			} catch (IOException e) {
+				writer = null;
 			}
 		}
+	}
+	
+	@Override
+	public final Result<T> exec(Socket socket) throws IOException {
+		request(socket);
+		return receive(socket);
 	}
 	
 	protected static final class RequestContext {
@@ -312,6 +319,6 @@ public abstract class AbstractCmd<T extends Serializable> implements Cmd<T> {
 	 * @return
 	 * @throws IOException
 	 */
-	protected abstract Result<T> callback(ResponseContext responseContext) throws FastdfsClientException;
+	protected abstract Result<T> callback(ResponseContext responseContext);
 	
 }

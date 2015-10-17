@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 
 public class QueryMetaDataCmd extends AbstractCmd<HashMap<String, String>> {
@@ -56,23 +55,25 @@ public class QueryMetaDataCmd extends AbstractCmd<HashMap<String, String>> {
 	}
 	
 	@Override
-	protected Result<HashMap<String, String>> callback(ResponseContext responseContext) throws FastdfsClientException {
-		HashMap<String, String> metaData = null;
+	protected Result<HashMap<String, String>> callback(ResponseContext responseContext) {
+		Result<HashMap<String, String>> result = new Result<HashMap<String, String>>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<HashMap<String, String>>(responseContext.getCode(), metaData);
+			return result;
 		}
 		
 		String metaStr = new String(responseContext.getData(), Context.CHARSET);
 		String[] rows = metaStr.split(Context.FDFS_RECORD_SEPERATOR);
-		metaData = new HashMap<String, String>();
+		HashMap<String, String> metaData = new HashMap<String, String>();
 		
 		for (String row : rows) {
 			String[] cols = row.split(Context.FDFS_FIELD_SEPERATOR);
 			metaData.put(cols[0], cols[1]);
 		}
 		
-		return new Result<HashMap<String, String>>(responseContext.getCode(), metaData);
+		result.setData(metaData);
+		
+		return result;
 	}
 	
 }

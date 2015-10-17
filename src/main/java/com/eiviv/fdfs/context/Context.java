@@ -73,6 +73,7 @@ public class Context {
 	public static final byte FDFS_FILENAME_BASE64_LENGTH = 27;
 	public static final byte FDFS_TRUNK_FILE_INFO_LEN = 16;
 	
+	public static final byte ERR_NO_ECORRECT = -1;
 	public static final byte ERR_NO_ENOENT = 2;
 	public static final byte ERR_NO_EIO = 5;
 	public static final byte ERR_NO_EBUSY = 16;

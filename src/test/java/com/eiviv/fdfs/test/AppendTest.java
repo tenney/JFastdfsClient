@@ -8,6 +8,7 @@ import org.junit.Test;
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
 import com.eiviv.fdfs.context.Context;
+import com.eiviv.fdfs.model.Result;
 
 public class AppendTest {
 	
@@ -16,14 +17,22 @@ public class AppendTest {
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		URL fileUrl = this.getClass().getResource("/Test.txt");
 		File file = new File(fileUrl.getPath());
-		String fileId = fastdfsClient.upload("group1", file);
+		Result<String> uploadResult = fastdfsClient.upload("group1", file);
+		
+		if (!uploadResult.isSuccess()) {
+			System.out.println(uploadResult.getState());
+			return;
+		}
+		
+		String fileId = uploadResult.getData();
+		
 		System.out.println("fileId:" + fileId);
 		
 		byte[] tb = "ABCD".getBytes(Context.CHARSET);
 		
-		boolean result = fastdfsClient.append(fileId, tb);
+		Result<Boolean> appendResult = fastdfsClient.append(fileId, tb);
 		
-		System.out.println(result);
+		System.out.println(appendResult.getData());
 		
 		fastdfsClient.close();
 	}

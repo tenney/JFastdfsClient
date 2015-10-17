@@ -1,6 +1,6 @@
 package com.eiviv.fdfs.client;
 
-public class AbstractClient {
+public abstract class AbstractClient {
 	
 	/**
 	 * 拆分 fileId

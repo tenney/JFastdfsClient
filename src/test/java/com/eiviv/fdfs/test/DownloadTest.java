@@ -7,20 +7,21 @@ import org.junit.Test;
 
 import com.eiviv.fdfs.client.FastdfsClient;
 import com.eiviv.fdfs.client.FastdfsClientFactory;
+import com.eiviv.fdfs.model.Result;
 
 public class DownloadTest {
 	
 	@Test
 	public void test() {
-		String fileId = "group1/M00/00/0F/rBDLZFXA_36AZwg8AAvqH_kipG8002.jpg";
+		String fileId = "group1/M00/00/01/rBDLZFYbvxmAXoazAAvqH_kipG8279.jpg";
 		FastdfsClient fastdfsClient = FastdfsClientFactory.getFastdfsClient();
 		File file = new File("E:/test.jpg");
 		
 		try {
 			FileOutputStream os = new FileOutputStream(file);
-			boolean flag = fastdfsClient.download(fileId, os);
+			Result<Boolean> downloadResult = fastdfsClient.download(fileId, os);
 			
-			System.out.println(flag);
+			System.out.println(downloadResult.getData());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

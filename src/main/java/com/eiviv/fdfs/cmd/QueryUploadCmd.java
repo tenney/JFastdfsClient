@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.model.UploadStorage;
 import com.eiviv.fdfs.utils.ByteUtils;
@@ -68,10 +67,11 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 	}
 	
 	@Override
-	protected Result<UploadStorage> callback(ResponseContext responseContext) throws FastdfsClientException {
+	protected Result<UploadStorage> callback(ResponseContext responseContext) {
+		Result<UploadStorage> result = new Result<UploadStorage>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<UploadStorage>(responseContext.getCode(), "Error");
+			return result;
 		}
 		
 		byte[] data = responseContext.getData();
@@ -80,7 +80,9 @@ public class QueryUploadCmd extends AbstractCmd<UploadStorage> {
 		byte storePath = data[Context.TRACKER_QUERY_STORAGE_STORE_BODY_LEN - 1];
 		UploadStorage uploadStorage = new UploadStorage(ip_addr + ":" + String.valueOf(port), storePath);
 		
-		return new Result<UploadStorage>(responseContext.getCode(), uploadStorage);
+		result.setData(uploadStorage);
+		
+		return result;
 	}
 	
 }

@@ -2,24 +2,26 @@ package com.eiviv.fdfs.model;
 
 import java.io.Serializable;
 
+import com.eiviv.fdfs.context.Context;
+
 public class Result<T extends Serializable> {
 	
 	private int code;
-	private String message;
+	private String state;
 	private T data;
 	
 	public Result(int code) {
 		this.code = code;
-	}
-	
-	public Result(int code, String message) {
-		this.code = code;
-		this.message = message;
+		this.setState(code);
 	}
 	
 	public Result(int code, T data) {
-		this.code = code;
+		this(code);
 		this.data = data;
+	}
+	
+	public boolean isSuccess() {
+		return this.code == Context.SUCCESS_CODE;
 	}
 	
 	public int getCode() {
@@ -30,12 +32,47 @@ public class Result<T extends Serializable> {
 		this.code = code;
 	}
 	
-	public String getMessage() {
-		return message;
+	public String getState() {
+		return state;
 	}
 	
-	public void setMessage(String message) {
-		this.message = message;
+	public void setState(int code) {
+		String state = "";
+		
+		switch (code) {
+		case Context.SUCCESS_CODE:
+			state = "成功";
+			break;
+		case Context.ERR_NO_ENOENT:
+			state = "未找到指定访问点";
+			break;
+		case Context.ERR_NO_EIO:
+			state = "IO异常";
+			break;
+		case Context.ERR_NO_EBUSY:
+			state = "系统繁忙";
+			break;
+		case Context.ERR_NO_EINVAL:
+			state = "无效访问";
+			break;
+		case Context.ERR_NO_ENOSPC:
+			state = "剩余空间不足";
+			break;
+		case Context.ECONNREFUSED:
+			state = "拒绝访问";
+			break;
+		case Context.ERR_NO_EALREADY:
+			state = "已在运行中";
+			break;
+		case Context.ERR_NO_ECORRECT:
+			state = "不在预期结果范围内";
+			break;
+		default:
+			state = "未知错误";
+			break;
+		}
+		
+		this.state = state;
 	}
 	
 	public T getData() {

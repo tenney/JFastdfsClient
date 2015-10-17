@@ -53,8 +53,9 @@ public class FileInfo implements Serializable {
 	
 	@Override
 	public String toString() {
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		return "ip = " + this.ip + ", " + "fileSize = " + this.fileSize + ", " + "ceateTime = " + df.format(this.ceateTime) + ", " + "crc32 = "
-				+ this.crc32;
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String tpl = "ip = %s, fileSize = %d, ceateTime = %s, crc32 = %s";
+		
+		return String.format(tpl, this.ip, this.fileSize, sdf.format(this.ceateTime), this.crc32);
 	}
 }

@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import com.eiviv.fdfs.context.Context;
-import com.eiviv.fdfs.exception.FastdfsClientException;
 import com.eiviv.fdfs.model.FileInfo;
 import com.eiviv.fdfs.model.Result;
 import com.eiviv.fdfs.utils.ByteUtils;
@@ -57,11 +56,11 @@ public class QueryFileInfoCmd extends AbstractCmd<FileInfo> {
 	}
 	
 	@Override
-	protected Result<FileInfo> callback(ResponseContext responseContext) throws FastdfsClientException {
-		FileInfo fileInfo = null;
+	protected Result<FileInfo> callback(ResponseContext responseContext) {
+		Result<FileInfo> result = new Result<FileInfo>(responseContext.getCode());
 		
 		if (!responseContext.isSuccess()) {
-			return new Result<FileInfo>(responseContext.getCode(), fileInfo);
+			return result;
 		}
 		
 		byte[] data = responseContext.getData();
@@ -69,8 +68,11 @@ public class QueryFileInfoCmd extends AbstractCmd<FileInfo> {
 		int createTime = (int) ByteUtils.bytes2long(data, Context.FDFS_PROTO_PKG_LEN_SIZE);
 		int crc32 = (int) ByteUtils.bytes2long(data, 2 * Context.FDFS_PROTO_PKG_LEN_SIZE);
 		String ip = (new String(data, 3 * Context.FDFS_PROTO_PKG_LEN_SIZE, Context.FDFS_IPADDR_SIZE)).trim();
+		FileInfo fileInfo = new FileInfo(fileSize, createTime, crc32, ip);
 		
-		return new Result<FileInfo>(responseContext.getCode(), new FileInfo(fileSize, createTime, crc32, ip));
+		result.setData(fileInfo);
+		
+		return result;
 	}
 	
 }
